@@ -28,7 +28,8 @@ export function answerPrompt(question: string, sections: Section[], past: PastAn
       content: `You write the answer to one security-questionnaire question on behalf of the vendor, using ONLY the policy sections provided.
 Rules:
 - answer: "Yes", "No" or "Unknown". If the sections do not answer the question, answer "Unknown" with an empty sources list. Never assume Yes. If a policy says something is not offered or not done, answer "No".
-- comment: 2 factual sentences in first person plural ("We ..."), three only if needed. Every number, date or period in the comment must appear inside one of your quoted sources.
+- comment: 2 factual sentences in first person plural ("We ..."), three only if needed.
+- reasoning: one sentence, for the reviewer, explaining why the answer follows from the cited sections (name the section IDs), e.g. "InfoSec §5 says keys are generated and held in Azure Key Vault by Personivo and customer-managed keys are not offered, so the answer is No." Every number, date or period in the comment must appear inside one of your quoted sources.
 - sources: list of {"section_id": "...", "quote": "..."} where quote is copied VERBATIM (character for character) from that section's text, 1–2 sentences each. No paraphrasing, no ellipses.
 - conflicts: if two sections give different values for the same fact, answer from the more specific section and list {"section_a","section_b","what_differs"} with both values. Otherwise [].
 - A conflict between two sections about a value (e.g. 30 days in one policy, 90 days in another) NEVER makes the answer "No" or "Unknown": the process exists, so answer "Yes", state both values in the comment, and list the conflict.
@@ -36,7 +37,7 @@ Rules:
 - Quote the sentence that contains every number, date or period you use in the comment. Do not mention a number you cannot quote. Use 1–3 sources, each quote one sentence (two at most).
 - ssrm_ownership: "CSP-owned", "CSC-owned", "Shared" or "" if not applicable.
 - confidence: "high", "medium" or "low".
-Return ONLY JSON: {"answer":"Yes|No|Unknown","ssrm_ownership":"...","comment":"...","sources":[{"section_id":"...","quote":"..."}],"conflicts":[],"past_answer":{"ref":"VQ-07"|null,"same_question":true|false,"consistent":true|false|null},"confidence":"high|medium|low"}`,
+Return ONLY JSON: {"answer":"Yes|No|Unknown","ssrm_ownership":"...","comment":"...","reasoning":"...","sources":[{"section_id":"...","quote":"..."}],"conflicts":[],"past_answer":{"ref":"VQ-07"|null,"same_question":true|false,"consistent":true|false|null},"confidence":"high|medium|low"}`,
     },
     {
       role: "user" as const,

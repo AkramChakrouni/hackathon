@@ -1,5 +1,5 @@
 import { BASELINE_MODEL, client, embed, parseJson, price } from "./nebius";
-import { loadPastAnswers, loadPolicies } from "./corpus";
+import { contextual, loadPastAnswers, loadPolicies } from "./corpus";
 import { shortlist } from "./retrieval";
 import { CATEGORIES, answerPrompt, selectionPrompt } from "./prompts";
 import { finalize, type ModelAnswer } from "./checks";
@@ -35,7 +35,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
   const tick = setInterval(() => { run.duration_ms = Date.now() - t0; emit({ type: "metrics", run }); }, 250);
 
   let vectors: (number[] | null)[] = o.questions.map(() => null);
-  try { vectors = await embedCached(o.questions.map((q) => q.text)); account("Qwen/Qwen3-Embedding-8B", o.questions.reduce((s, q) => s + Math.ceil(q.text.length / 4), 0), 0); } catch { /* shortlist unavailable → whole corpus */ }
+  try { vectors = await embedCached(o.questions.map((q) => contextual(q))); account("Qwen/Qwen3-Embedding-8B", o.questions.reduce((s, q) => s + Math.ceil(q.text.length / 4), 0), 0); } catch { /* shortlist unavailable → whole corpus */ }
 
   await pool(o.questions.map((q, i) => ({ q, i })), o.concurrency ?? Number(process.env.CONCURRENCY ?? 50), async ({ q, i }) => {
     const started = Date.now();
@@ -45,7 +45,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     let selection: Selection = { category: "security", relevant_sections: [], relevant_past_answers: [], coverage: "none" };
     let rawSmall: string | undefined, selMs = 0;
     try {
-      const r = await oa.chat.completions.create({ model: o.engine.small, messages: selectionPrompt(q.text, cand.sections), temperature: 0, max_tokens: 160 }, { signal: o.signal });
+      const r = await oa.chat.completions.create({ model: o.engine.small, messages: selectionPrompt(contextual(q), cand.sections), temperature: 0, max_tokens: 160 }, { signal: o.signal });
       inTok += r.usage?.prompt_tokens ?? 0; outTok += r.usage?.completion_tokens ?? 0; account(o.engine.small, r.usage?.prompt_tokens ?? 0, r.usage?.completion_tokens ?? 0);
       rawSmall = r.choices[0].message.content ?? "";
       const j = parseJson<Partial<Selection>>(rawSmall);
@@ -72,7 +72,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     if (selection.coverage === "none" && !selected.length && cand.complete && (cand.topScore ?? 0) >= 0.5) writerSections = cand.sections.slice(0, 3);
     if (writerSections.length) {
       try {
-        const r = await oa.chat.completions.create({ model: o.engine.large, messages: answerPrompt(q.text, writerSections, pastSel), temperature: 0, max_tokens: 600 }, { signal: o.signal });
+        const r = await oa.chat.completions.create({ model: o.engine.large, messages: answerPrompt(contextual(q), writerSections, pastSel), temperature: 0, max_tokens: 600 }, { signal: o.signal });
         inTok += r.usage?.prompt_tokens ?? 0; outTok += r.usage?.completion_tokens ?? 0; account(o.engine.large, r.usage?.prompt_tokens ?? 0, r.usage?.completion_tokens ?? 0);
         rawLarge = r.choices[0].message.content ?? "";
         raw = parseJson<ModelAnswer>(rawLarge);

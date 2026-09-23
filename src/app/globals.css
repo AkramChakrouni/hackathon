@@ -29,3 +29,11 @@ body {
   background-image: linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
   background-size: 32px 32px;
 }
+
+@keyframes logo-spin { to { transform: rotate(360deg); } }
+.logo-spin { animation: logo-spin 1.1s linear infinite; transform-origin: 50% 50%; }
+@keyframes logo-glow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 45%, transparent); } 50% { box-shadow: 0 0 22px 6px color-mix(in oklab, var(--color-accent) 25%, transparent); } }
+.logo-glow { animation: logo-glow 1.6s ease-in-out infinite; }
+mark.q { background: color-mix(in oklab, var(--color-accent) 28%, transparent); color: var(--color-fg); border-radius: 3px; padding: 0 2px; box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 40%, transparent); }
+.wd-del { color: var(--color-bad); text-decoration: line-through; opacity: .8; }
+.wd-add { color: var(--color-ok); background: color-mix(in oklab, var(--color-ok) 14%, transparent); border-radius: 3px; }

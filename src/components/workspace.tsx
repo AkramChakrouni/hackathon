@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileDiff, Play, RefreshCw } from "lucide-react";
+import { Download, FileDiff, Play } from "lucide-react";
 import { diffRuns, type Change } from "@/lib/diff";
+import { Logo } from "@/components/logo";
+import { PolicyViewer } from "@/components/policy-viewer";
 import type { Answer, Event, Flag, PolicySet, Question, RunMeta } from "@/lib/types";
 
 export interface Meta {
@@ -30,6 +32,7 @@ export function Workspace({ meta }: { meta: Meta }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ short: string; sectionId: string; quote?: string } | null>(null);
   const t0 = useRef(0);
   const abort = useRef<AbortController | null>(null);
   const questions = meta.questionnaire.questions;
@@ -92,7 +95,7 @@ export function Workspace({ meta }: { meta: Meta }) {
       {/* header */}
       <div className="flex items-end justify-between gap-6 border-b border-line px-8 py-5">
         <div>
-          <div className="text-[13px] uppercase tracking-[0.2em] text-mute">{meta.company} · {meta.questionnaire.name}</div>
+          <div className="flex items-center gap-3 text-[13px] uppercase tracking-[0.2em] text-mute"><Logo size={26} active={running} />{meta.company} · {meta.questionnaire.name}</div>
           <h1 className="mt-1 text-[28px] font-semibold tracking-tight">{questions.length} questions · {meta.policies.length} policies · {meta.past_answers} past answers</h1>
           <div className="mt-1 flex flex-wrap gap-x-4 text-[15px] text-mute">{meta.policies.map((p) => <span key={p.short}>{p.short} v{policySet === "updated" && meta.updated_policies.find((u) => u.short === p.short) ? meta.updated_policies.find((u) => u.short === p.short)!.version : p.version}</span>)}</div>
         </div>
@@ -104,7 +107,7 @@ export function Workspace({ meta }: { meta: Meta }) {
           )}
           {finished && <button onClick={exportCsv} className="flex items-center gap-2 rounded-md border border-line px-4 py-3 text-[15px] text-mute hover:text-fg"><Download size={16} /> Export CSV</button>}
           <button onClick={start} disabled={running} className="flex items-center gap-2 rounded-md bg-accent px-6 py-3 text-[16px] font-semibold text-ink shadow-[0_0_40px_-8px_var(--color-accent)] hover:brightness-110 disabled:opacity-60">
-            {running ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />} {running ? "Running…" : finished ? "Run again" : "Run"}
+            {running ? <Logo size={18} active className="[&_svg]:!text-ink" /> : <Play size={16} fill="currentColor" />} {running ? "Running…" : finished ? "Run again" : "Run"}
           </button>
         </div>
       </div>
@@ -146,9 +149,9 @@ export function Workspace({ meta }: { meta: Meta }) {
                     <td className={`border-b border-line ${a ? FLAG[a.flag].bar : "bg-line"}`} />
                     <td className="border-b border-line py-3 pl-3 font-mono text-[14px] text-mute">{q.id}{ch?.changed && <div className="mt-1 inline-block rounded bg-accent/15 px-1.5 py-0.5 text-[11px] font-medium uppercase text-accent">changed</div>}</td>
                     <td className="border-b border-line py-3 pr-4 leading-snug text-fg/90"><span className="line-clamp-2">{q.text}</span></td>
-                    <td className="border-b border-line py-3">{a ? <span className={`rounded px-2 py-0.5 font-mono text-[14px] font-semibold ${a.answer === "Yes" ? "bg-ok/15 text-ok" : a.answer === "No" ? "bg-bad/15 text-bad" : "bg-warn/15 text-warn"}`}>{a.answer}</span> : <span className="text-[14px] text-mute">{selected.has(q.id) ? "writing…" : running ? "selecting…" : ""}</span>}</td>
+                    <td className="border-b border-line py-3">{a ? <span className={`rounded px-2 py-0.5 font-mono text-[14px] font-semibold ${a.answer === "Yes" ? "bg-ok/15 text-ok" : a.answer === "No" ? "bg-bad/15 text-bad" : "bg-warn/15 text-warn"}`}>{a.answer}</span> : <span className="flex items-center gap-2 text-[14px] text-mute">{running && <Logo size={14} active />}{selected.has(q.id) ? "writing…" : running ? "selecting…" : ""}</span>}</td>
                     {!open && <td className="border-b border-line py-3 pr-4 leading-snug text-fg/80"><span className="line-clamp-2">{a?.comment}</span></td>}
-                    <td className="border-b border-line py-3 font-mono text-[13px] text-mute">{a?.sources[0] ? `${a.sources[0].section_id} v${a.sources[0].version}${a.sources.length > 1 ? ` +${a.sources.length - 1}` : ""}` : a ? "—" : ""}</td>
+                    <td className="border-b border-line py-3 font-mono text-[13px] text-mute">{a?.sources[0] ? <button onClick={(e) => { e.stopPropagation(); setViewer({ short: a.sources[0].section_id.split(" §")[0], sectionId: a.sources[0].section_id, quote: a.sources[0].quote }); }} className="hover:text-accent">{a.sources[0].section_id} v{a.sources[0].version}{a.sources.length > 1 ? ` +${a.sources.length - 1}` : ""}</button> : a ? "—" : ""}</td>
                   </tr>
                 );
               })}
@@ -170,9 +173,10 @@ export function Workspace({ meta }: { meta: Meta }) {
               </div>
             )}
             <p className="mt-4 leading-relaxed text-fg/90">{openA.comment}</p>
+            {openA.reasoning && <div className="mt-3 rounded-md border border-line bg-ink px-3 py-2 text-[14px] text-fg/80"><span className="mr-2 text-[11px] uppercase tracking-wider text-mute">Why</span>{openA.reasoning}</div>}
             {openA.flag === "orange" && openA.conflicts.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-2">
-                {[openA.conflicts[0].section_a, openA.conflicts[0].section_b].map((id) => { const s = openA.sources.find((x) => x.section_id === id); return <div key={id} className="rounded-md border border-warn/40 p-3 text-[14px]"><div className="font-mono text-[12px] text-warn">{id}{s ? ` · v${s.version}` : ""}</div><div className="mt-1 text-fg/85">{s?.quote ?? "(see policy)"}</div></div>; })}
+                {[openA.conflicts[0].section_a, openA.conflicts[0].section_b].map((id) => { const s = openA.sources.find((x) => x.section_id === id); return <div key={id} onClick={() => setViewer({ short: id.split(" §")[0], sectionId: id, quote: s?.quote })} className="cursor-pointer rounded-md border border-warn/40 p-3 text-[14px] hover:bg-warn/5"><div className="font-mono text-[12px] text-warn">{id}{s ? ` · v${s.version}` : ""}</div><div className="mt-1 text-fg/85">{s?.quote ?? "(see policy)"}</div></div>; })}
                 <div className="col-span-2 text-[13px] text-warn">{openA.conflicts[0].what_differs}</div>
               </div>
             )}
@@ -185,13 +189,14 @@ export function Workspace({ meta }: { meta: Meta }) {
             {openA.sources.length > 0 && (
               <div className="mt-5 space-y-2">
                 <div className="text-[12px] uppercase tracking-wider text-mute">Sources · quotes verified against the policy text</div>
-                {openA.sources.map((s, i) => <blockquote key={i} className="rounded-md border-l-2 border-accent bg-ink px-3 py-2 text-[14px] text-fg/85"><div className="mb-1 font-mono text-[12px] text-accent">{s.policy} · {s.section_id} · v{s.version}</div>“{s.quote}”</blockquote>)}
+                {openA.sources.map((s, i) => <blockquote key={i} onClick={() => setViewer({ short: s.section_id.split(" §")[0], sectionId: s.section_id, quote: s.quote })} className="cursor-pointer rounded-md border-l-2 border-accent bg-ink px-3 py-2 text-[14px] text-fg/85 transition hover:bg-accent/5"><div className="mb-1 flex items-center font-mono text-[12px] text-accent">{s.policy} · {s.section_id} · v{s.version}<span className="ml-auto text-[11px] text-mute">open in policy →</span></div>“{s.quote}”</blockquote>)}
               </div>
             )}
           </aside>
         )}
       </div>
 
+      {viewer && <PolicyViewer short={viewer.short} sectionId={viewer.sectionId} quote={viewer.quote} onClose={() => setViewer(null)} />}
       <div className="flex items-center gap-6 border-t border-line px-8 py-2 font-mono text-[12px] text-mute">
         <span>selection: {short(meta.models.selection)}</span><span>writing: {short(meta.models.writing)}</span><span>embedding: {short(meta.models.embedding)}</span><span className="ml-auto">{meta.models.provider} · EU · no closed model in the pipeline</span>
       </div>

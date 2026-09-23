@@ -72,6 +72,12 @@ export function loadPastAnswers(): PastAnswer[] {
   return body.map((r) => ({ ref: r[col("ref")]?.trim() ?? "", question: r[col("question")]?.trim() ?? "", answer: r[col("answer")]?.trim() ?? "", comment: r[col("comment")]?.trim() ?? "" })).filter((p) => p.ref);
 }
 
+/** CCM / CAIQ v4.1 domain codes → names. Gives the selector the domain context that the question ID carries (AIS-05.2 "Is testing automated?" is about application security, not DR testing). */
+const CCM: Record<string, string> = { "A&A": "Audit & Assurance", AIS: "Application & Interface Security", BCR: "Business Continuity Management & Operational Resilience", CCC: "Change Control & Configuration Management", CEK: "Cryptography, Encryption & Key Management", DCS: "Datacenter Security", DSP: "Data Security & Privacy Lifecycle Management", GRC: "Governance, Risk & Compliance", HRS: "Human Resources", IAM: "Identity & Access Management", IPY: "Interoperability & Portability", IVS: "Infrastructure & Virtualization Security", "I&S": "Infrastructure & Virtualization Security", LOG: "Logging & Monitoring", SEF: "Security Incident Management, E-Discovery & Cloud Forensics", STA: "Supply Chain Management, Transparency & Accountability", TVM: "Threat & Vulnerability Management", UEM: "Universal Endpoint Management" };
+export const domainOf = (id: string) => CCM[id.split("-")[0]] ?? "";
+/** Question text with its CAIQ domain in front, used for retrieval and selection. */
+export const contextual = (q: Question) => (domainOf(q.id) ? `${domainOf(q.id)}: ${q.text}` : q.text);
+
 export interface Questionnaire { name: string; header: string[]; rows: string[][]; questions: Question[] }
 
 /** A questionnaire CSV. Keeps the original columns so the export can fill answer/comment in place. */

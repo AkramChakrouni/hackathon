@@ -32,12 +32,12 @@ export function unverifiedNumbers(comment: string, quotes: string[]): string[] {
   return [...new Set(nums.filter((n) => !hay.includes(n)))];
 }
 
-export interface ModelAnswer { answer?: string; ssrm_ownership?: string; comment?: string; sources?: { section_id?: string; quote?: string }[]; conflicts?: Conflict[]; past_answer?: { ref?: string | null; same_question?: boolean; consistent?: boolean | null }; confidence?: string }
+export interface ModelAnswer { answer?: string; ssrm_ownership?: string; comment?: string; reasoning?: string; sources?: { section_id?: string; quote?: string }[]; conflicts?: Conflict[]; past_answer?: { ref?: string | null; same_question?: boolean; consistent?: boolean | null }; confidence?: string }
 
 export const RED_COMMENT = "No source in the current policies covers this question. Needs a human answer.";
 
 /** Steps 3 and 4: code-level checks and deterministic flags. */
-export function finalize(raw: ModelAnswer | null, selected: Section[], candidates: PastAnswer[], coverage: Answer["coverage"]): Pick<Answer, "answer" | "ssrm_ownership" | "comment" | "flag" | "flag_reason" | "sources" | "conflicts" | "past_answer" | "past_answer_consistent" | "confidence" | "checks"> {
+export function finalize(raw: ModelAnswer | null, selected: Section[], candidates: PastAnswer[], coverage: Answer["coverage"]): Pick<Answer, "answer" | "ssrm_ownership" | "comment" | "reasoning" | "flag" | "flag_reason" | "sources" | "conflicts" | "past_answer" | "past_answer_consistent" | "confidence" | "checks"> {
   const byId = new Map(selected.map((s) => [s.id, s]));
   let answer: AnswerValue = raw?.answer === "Yes" || raw?.answer === "No" ? raw.answer : "Unknown";
   const sources: Source[] = [];
@@ -79,12 +79,12 @@ export function finalize(raw: ModelAnswer | null, selected: Section[], candidate
   let flag: Flag, flag_reason: string;
   if (answer === "Unknown" || sources.length === 0 || coverage === "none") {
     flag = "red"; flag_reason = coverage === "none" ? "No policy section covers this topic" : raw && (raw.sources?.length ?? 0) > 0 && sources.length === 0 ? "No verifiable source (quotes not found in the cited sections)" : "The selected sections do not answer this question";
-    return { answer: "Unknown", ssrm_ownership: "", comment: RED_COMMENT, flag, flag_reason, sources: [], conflicts: [], past_answer: past, past_answer_consistent: consistent, confidence: "low", checks: { quotes_valid: sources.length, quotes_dropped: dropped, numbers_unverified: [] } };
+    return { answer: "Unknown", ssrm_ownership: "", comment: RED_COMMENT, reasoning: coverage === "none" ? "None of the policy sections address this topic, so no answer is generated." : "The selected sections were read but do not answer the question, so no answer is generated.", flag, flag_reason, sources: [], conflicts: [], past_answer: past, past_answer_consistent: consistent, confidence: "low", checks: { quotes_valid: sources.length, quotes_dropped: dropped, numbers_unverified: [] } };
   }
   const reasons: string[] = [];
   if (conflicts.length) reasons.push(`Policies disagree: ${conflicts.map((c) => `${c.section_a} vs ${c.section_b}`).join(", ")}`);
   if (consistent === false) reasons.push(`Practice changed since the 2025 answer${past ? ` (${past.ref})` : ""}`);
   if (numbers.length) reasons.push(`Unverified number${numbers.length > 1 ? "s" : ""} in comment: ${numbers.join(", ")}`);
   if (reasons.length) { flag = "orange"; flag_reason = reasons.join(" · "); } else { flag = "green"; flag_reason = "Answered from the current policy with verified quotes"; }
-  return { answer, ssrm_ownership: (raw?.ssrm_ownership ?? "").trim(), comment, flag, flag_reason, sources, conflicts, past_answer: past, past_answer_consistent: consistent, confidence, checks: { quotes_valid: sources.length, quotes_dropped: dropped, numbers_unverified: numbers } };
+  return { answer, ssrm_ownership: (raw?.ssrm_ownership ?? "").trim(), comment, reasoning: (raw?.reasoning ?? "").trim(), flag, flag_reason, sources, conflicts, past_answer: past, past_answer_consistent: consistent, confidence, checks: { quotes_valid: sources.length, quotes_dropped: dropped, numbers_unverified: numbers } };
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import "./globals.css";
 
 const sans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <header className="flex h-12 items-center justify-between border-b border-line px-5 text-sm">
           <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-accent shadow-[0_0_12px_var(--color-accent)]" />
+            <Logo size={20} />
             TenderScale
           </Link>
           <nav className="flex gap-5 text-mute">

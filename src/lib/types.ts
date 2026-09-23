@@ -18,6 +18,7 @@ export interface Answer {
   answer: AnswerValue;
   ssrm_ownership: string;
   comment: string;
+  reasoning: string;       // one sentence: why this answer follows from the cited sections
   flag: Flag;
   flag_reason: string;
   sources: Source[];
