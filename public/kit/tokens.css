@@ -1,0 +1,78 @@
+/* TenderScale · SF startup × macOS · canonical theme tokens */
+:root,[data-theme="light"] {
+  color-scheme: light;
+  --ts-canvas:#F7F8FA;
+  --ts-surface:#FFFFFF;
+  --ts-surface-raised:#FFFFFF;
+  --ts-sidebar:#F0F2F6;
+  --ts-glass:#F0F2F6EB;
+  --ts-text:#20242C;
+  --ts-secondary:#596273;
+  --ts-border:#DCE1E9;
+  --ts-border-strong:#A4AEBD;
+  --ts-hover:#F0F3F8;
+  --ts-selected:#EDEFFF;
+  --ts-accent:#5145CD;
+  --ts-on-accent:#FFFFFF;
+  --ts-accent-soft:#EDEBFF;
+  --ts-green:#17734D;
+  --ts-green-soft:#E9F6EE;
+  --ts-amber:#895700;
+  --ts-amber-soft:#FFF4DA;
+  --ts-red:#AE3347;
+  --ts-red-soft:#FFF0F2;
+  --ts-neutral:#EDF0F4;
+  --ts-disabled-bg:#E9EDF2;
+  --ts-disabled-text:#616B7B;
+  --ts-shadow:0 8px 32px #2634490A,0 1px 3px #26344908;
+  --ts-panel-shadow:-12px 0 48px #26344918,0 2px 8px #26344910;
+  --ts-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Arial,sans-serif;
+  --ts-mono:ui-monospace,"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --ts-body:16px;
+  --ts-title:24px;
+  --ts-page-title:32px;
+  --ts-timer:32px;
+  --ts-radius-sm:8px;
+  --ts-radius:12px;
+  --ts-radius-lg:16px;
+  --ts-space-1:4px;
+  --ts-space-2:8px;
+  --ts-space-3:12px;
+  --ts-space-4:16px;
+  --ts-space-6:24px;
+  --ts-space-8:32px;
+  --ts-sidebar-width:208px;
+  --ts-control-height:44px;
+  --ts-row-height:56px;
+  --ts-drawer-width:576px;
+  --ts-motion:160ms;
+}
+[data-theme="dark"] {
+  color-scheme:dark;
+  --ts-canvas:#13161C;
+  --ts-surface:#1B1F27;
+  --ts-surface-raised:#222732;
+  --ts-sidebar:#191D25;
+  --ts-glass:#191D25ED;
+  --ts-text:#F1F3F8;
+  --ts-secondary:#B3BDCF;
+  --ts-border:#343C4B;
+  --ts-border-strong:#727E93;
+  --ts-hover:#252C39;
+  --ts-selected:#2B2C4D;
+  --ts-accent:#B5AFFF;
+  --ts-on-accent:#201B4E;
+  --ts-accent-soft:#302D50;
+  --ts-green:#6ADAA4;
+  --ts-green-soft:#183B2D;
+  --ts-amber:#F0C77B;
+  --ts-amber-soft:#3C311F;
+  --ts-red:#FFA0AE;
+  --ts-red-soft:#422731;
+  --ts-neutral:#2A313E;
+  --ts-disabled-bg:#252B36;
+  --ts-disabled-text:#A5AEC0;
+  --ts-shadow:0 8px 32px #00000016,0 1px 3px #0000001F;
+  --ts-panel-shadow:-12px 0 48px #00000040,0 2px 8px #00000030;
+}
+@media(prefers-reduced-motion:reduce){:root{--ts-motion:0ms}}

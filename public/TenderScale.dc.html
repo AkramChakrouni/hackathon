@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TenderScale</title>
+<link rel="icon" href="kit/favicon.svg">
+<link rel="stylesheet" href="kit/tokens.css">
+<script>document.documentElement.dataset.theme = localStorage.getItem('ts-theme') || 'dark';</script>
+<script src="engine.js"></script>
+<style>
+html,body{margin:0;background:var(--ts-canvas);color:var(--ts-text);font-family:var(--ts-font);-webkit-font-smoothing:antialiased;font-synthesis:none}
+*{box-sizing:border-box}
+button,input{font:inherit}
+a{color:var(--ts-accent)} a:hover{color:var(--ts-text)}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--ts-accent);outline-offset:3px}
+@keyframes ts-sway-a{0%,100%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
+@keyframes ts-sway-b{0%,100%{transform:translateX(1.5px)}50%{transform:translateX(-1.5px)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:0s!important}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;min-width:1200px;background:var(--ts-canvas);color:var(--ts-text);font-family:var(--ts-font);font-size:16px;line-height:1.4">
+
+  <aside style="position:fixed;left:0;top:0;bottom:0;width:235px;background:var(--ts-sidebar);border-right:1px solid var(--ts-border);display:flex;flex-direction:column;padding:18px 7px 22px;z-index:30">
+    <div style="display:flex;align-items:center;gap:14px;padding:0 20px;height:36px">
+      <svg viewBox="0 0 40 56" width="24" height="34" aria-hidden="true" style="flex:none"><path d="M4 16 27 4V15L15 22V32L4 27Z" fill="#827CF4"></path><path d="M27 4 36 9V21L27 16Z" fill="#4846F1"></path><path d="M15 40 36 28V40L15 51Z" fill="#807BF4"></path><path d="M4 35 15 40V51L4 45Z" fill="#443DF0"></path></svg>
+      <span style="font-size:24px;font-weight:600;letter-spacing:-0.6px">TenderScale</span>
+    </div>
+    <nav aria-label="Workspace" style="display:flex;flex-direction:column;gap:7px;margin-top:31px">
+      <button onClick="{{ goOverview }}" aria-current="{{ nav.qCurrent }}" style="display:flex;align-items:center;gap:22px;height:46px;padding:0 20px;border:0;border-radius:10px;background:{{ nav.qBg }};color:{{ nav.qColor }};font-size:17px;font-weight:{{ nav.qWeight }};text-align:left;cursor:pointer;transition:background 160ms">
+        <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>
+        <span>Questionnaires</span>
+      </button>
+      <button onClick="{{ goPolicies }}" aria-current="{{ nav.pCurrent }}" style="display:flex;align-items:center;gap:22px;height:46px;padding:0 20px;border:0;border-radius:10px;background:{{ nav.pBg }};color:{{ nav.pColor }};font-size:17px;font-weight:{{ nav.pWeight }};text-align:left;cursor:pointer;transition:background 160ms">
+        <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg>
+        <span>Policies</span>
+      </button>
+      <button onClick="{{ goBenchmark }}" aria-current="{{ nav.bCurrent }}" style="display:flex;align-items:center;gap:22px;height:46px;padding:0 20px;border:0;border-radius:10px;background:{{ nav.bBg }};color:{{ nav.bColor }};font-size:17px;font-weight:{{ nav.bWeight }};text-align:left;cursor:pointer;transition:background 160ms">
+        <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20V4M4 20h16M8 16v-4M13 16V8M18 16V5"></path></svg>
+        <span>Benchmark</span>
+      </button>
+      <button onClick="{{ goConnectors }}" aria-current="{{ nav.cCurrent }}" style="display:flex;align-items:center;gap:22px;height:46px;padding:0 20px;border:0;border-radius:10px;background:{{ nav.cBg }};color:{{ nav.cColor }};font-size:17px;font-weight:{{ nav.cWeight }};text-align:left;cursor:pointer;transition:background 160ms">
+        <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M9 8H5v12h14V8h-4M9 12V3m-3 3 3-3 3 3M9 16h6"></path></svg>
+        <span>Connectors</span>
+      </button>
+    </nav>
+    <div style="margin-top:auto;border-top:1px solid var(--ts-border);margin-left:9px;margin-right:9px;padding-top:22px;display:flex;flex-direction:column;gap:30px">
+      <div style="display:flex;align-items:center;gap:12px;padding:0 8px">
+        <span aria-hidden="true" style="width:34px;height:34px;flex:none;border-radius:9px;display:grid;place-items:center;background:var(--ts-surface);border:1px solid var(--ts-border);font-weight:600">{{ companyInitial }}</span>
+        <div style="min-width:0">
+          <div style="font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ company }}</div>
+          <div style="font-size:14px;margin-top:2px;color:var(--ts-secondary)">Workspace</div>
+        </div>
+      </div>
+      <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:20px;height:44px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--ts-text);font-size:17px;text-align:left;cursor:pointer" style-hover="background: var(--ts-hover)">
+        <sc-if value="{{ isDark }}" hint-placeholder-val="{{ true }}">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M20 14a8 8 0 0 1-10-10A8 8 0 1 0 20 14Z"></path></svg>
+        </sc-if>
+        <sc-if value="{{ isLight }}" hint-placeholder-val="{{ false }}">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"></path></svg>
+        </sc-if>
+        <span>{{ themeLabel }}</span>
+      </button>
+    </div>
+  </aside>
+
+  <main ref="{{ mainRef }}" style="margin-left:235px;height:100vh;overflow:auto;display:flex;flex-direction:column;padding:0 30px">
+
+    <div style="display:flex;align-items:center;gap:14px;height:44px;margin-top:11px;flex:none;color:var(--ts-secondary);font-size:16px">
+      <sc-if value="{{ crumb.back }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ goOverview }}" style="display:flex;align-items:center;gap:16px;border:0;background:transparent;padding:0;color:var(--ts-secondary);cursor:pointer;height:40px" style-hover="color: var(--ts-text)">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5m5-5-5 5 5 5"></path></svg>
+          <span>Questionnaires</span>
+        </button>
+      </sc-if>
+      <sc-for list="{{ crumb.items }}" as="c" hint-placeholder-count="2">
+        <sc-if value="{{ c.sep }}" hint-placeholder-val="{{ true }}"><span>/</span></sc-if>
+        <span style="color:{{ c.color }}">{{ c.label }}</span>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ metaLoading }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--ts-secondary);padding-bottom:80px">
+        {{ loaderLg }}
+        <span>Loading workspace…</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ metaError }}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="margin-top:48px;max-width:780px;display:flex;align-items:flex-start;gap:12px;padding:16px 18px;border:1px solid var(--ts-red);border-radius:10px;background:var(--ts-red-soft)">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;margin-top:2px;color:var(--ts-red);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v5m0 3v.1"></path></svg>
+        <div style="flex:1">
+          <div style="font-weight:600">Couldn't reach the backend at {{ apiBaseLabel }}.</div>
+          <div style="margin-top:6px">{{ metaErrorText }}</div>
+          <div style="color:var(--ts-secondary);margin-top:6px">Start it with npm run dev in the hackathon repo, or set the Backend tweak to replay.</div>
+        </div>
+        <button onClick="{{ retryInit }}" style="height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);cursor:pointer">Retry</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ show.overview }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Questionnaires" style="padding-bottom:48px">
+        <div style="margin-top:36px">
+          <h1 style="margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-1px">Questionnaires</h1>
+          <p style="margin:10px 0 0;font-size:18px;color:var(--ts-secondary)">Choose a questionnaire. Every answer starts with your policies.</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:44px 0 16px;color:var(--ts-secondary)">
+          <span style="color:var(--ts-text);font-weight:500">2 questionnaires</span>
+          <div style="display:flex;align-items:center;gap:16px">
+            <sc-if value="{{ canReset }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ resetDemo }}" style="height:36px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--ts-secondary);cursor:pointer" style-hover="background: var(--ts-hover)">Reset demo</button>
+            </sc-if>
+            <button onClick="{{ pickFile }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);cursor:pointer" style-hover="background: var(--ts-hover)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M12 16V4m-5 5 5-5 5 5M5 16v4h14v-4"></path></svg>Upload questionnaire</button>
+            <sc-if value="{{ up.is }}" hint-placeholder-val="{{ false }}"><button onClick="{{ useDemo }}" style="height:40px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--ts-accent);cursor:pointer" style-hover="background: var(--ts-hover)">Demo set</button></sc-if>
+          </div>
+        </div>
+        <div style="background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow);overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,32fr) minmax(200px,26fr) minmax(0,10fr) minmax(0,14fr) minmax(0,18fr);color:var(--ts-secondary);font-weight:500">
+            <div style="padding:13px 24px">Questionnaire</div><div style="padding:13px 24px">Status</div><div style="padding:13px 24px">Questions</div><div style="padding:13px 24px">Sources</div><div style="padding:13px 24px">Action</div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,32fr) minmax(200px,26fr) minmax(0,10fr) minmax(0,14fr) minmax(0,18fr);align-items:center;min-height:112px;border-top:1px solid var(--ts-border)">
+            <div style="padding:20px 24px">
+              <div style="display:flex;align-items:center;gap:12px;font-weight:600">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>
+                <span>{{ qnTitle }}</span>
+              </div>
+              <div style="margin:8px 0 0 32px;color:var(--ts-secondary)">{{ ovSub }}</div>
+            </div>
+            <div style="padding:20px 24px">
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:8px;background:{{ ov.badgeBg }};color:{{ ov.badgeColor }}">{{ ov.badge }}</span>
+              <sc-if value="{{ ov.hasCounts }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-wrap:wrap;column-gap:12px;row-gap:2px;margin-top:9px;font-size:15px;color:var(--ts-secondary);white-space:nowrap;font-variant-numeric:tabular-nums"><span>{{ ov.green }} policy</span><span>{{ ov.orange }} review</span><span>{{ ov.red }} gaps</span></div>
+                <div style="display:flex;flex-wrap:wrap;column-gap:6px;margin-top:4px;font-size:14px;color:var(--ts-secondary);white-space:nowrap"><span>{{ ov.lastAgo }}</span><span>{{ ov.lastDur }}</span></div>
+              </sc-if>
+            </div>
+            <div style="padding:20px 24px;font-family:var(--ts-mono)">{{ totalQuestions }}</div>
+            <div style="padding:20px 24px">{{ policyCount }} policies</div>
+            <div style="padding:20px 24px">
+              <button onClick="{{ openQuestionnaire }}" aria-label="Open 2026 CAIQ questionnaire" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);font-weight:500;cursor:pointer" style-hover="background: var(--ts-hover)">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14m-5-5 5 5-5 5"></path></svg>Open
+              </button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,32fr) minmax(200px,26fr) minmax(0,10fr) minmax(0,14fr) minmax(0,18fr);align-items:center;min-height:112px;border-top:1px solid var(--ts-border)">
+            <div style="padding:20px 24px">
+              <div style="display:flex;align-items:center;gap:12px;font-weight:600">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>
+                <span>2025 questionnaire</span>
+              </div>
+              <div style="margin:8px 0 0 32px;color:var(--ts-secondary)">Imported answers for comparison</div>
+            </div>
+            <div style="padding:20px 24px"><span style="display:inline-flex;padding:5px 10px;border-radius:8px;background:var(--ts-neutral);color:var(--ts-secondary)">Comparison reference</span></div>
+            <div style="padding:20px 24px;font-family:var(--ts-mono)">{{ pastCount }}</div>
+            <div style="padding:20px 24px;color:var(--ts-secondary)">—</div>
+            <div style="padding:20px 24px">
+              <button onClick="{{ openReference }}" aria-label="Open 2025 questionnaire" style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);font-weight:500;cursor:pointer" style-hover="background: var(--ts-hover)">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14m-5-5 5 5-5 5"></path></svg>Open
+              </button>
+            </div>
+          </div>
+        </div>
+        <p style="display:flex;align-items:center;gap:10px;margin:24px 0;color:var(--ts-secondary)">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M9 8H5v12h14V8h-4M9 12V3m-3 3 3-3 3 3M9 16h6"></path></svg>
+          Answers are rebuilt from your policies each time you run.
+        </p>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ show.questionnaire }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="2026 CAIQ" style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:16px 24px;margin-top:21px;flex:none">
+          <div style="padding-top:5px;min-width:0">
+            <h1 style="margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-0.8px;white-space:nowrap">{{ qnTitle }}</h1>
+            <p style="margin:9px 0 0;font-size:18px;color:var(--ts-secondary);display:flex;gap:10px;align-items:center"><span>{{ company }}</span><span>·</span><span>{{ totalQuestions }} questions</span><span>·</span><span>{{ policyCount }} policies</span><sc-if value="{{ up.is }}" hint-placeholder-val="{{ false }}"><span>·</span><button onClick="{{ useDemo }}" style="border:0;background:transparent;padding:0;color:var(--ts-accent);font-size:18px;cursor:pointer" style-hover="text-decoration: underline">Demo set</button></sc-if></p>
+            <sc-if value="{{ up.replayNote }}" hint-placeholder-val="{{ false }}"><p style="margin:8px 0 0;color:var(--ts-amber)">The in-browser engine only has recorded answers for the demo set. Switch the Backend tweak to live to answer this file.</p></sc-if>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:24px;flex:none">
+            <div style="display:flex;align-items:flex-start;gap:40px">
+              <div aria-label="Run metrics" style="display:flex;align-items:flex-start;padding-top:6px">
+                <div style="padding-right:22px">
+                  <div style="font-family:var(--ts-mono);font-size:25px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:0.5px">{{ m.time }}</div>
+                  <div style="font-size:14px;margin-top:4px">run time</div>
+                </div>
+                <div style="padding:0 22px;border-left:1px solid var(--ts-border)">
+                  <div style="font-size:22px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap">{{ m.processed }}</div>
+                  <div style="font-size:14px;margin-top:4px">processed</div>
+                </div>
+                <div style="padding:0 22px;border-left:1px solid var(--ts-border)">
+                  <div style="font-size:22px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums">{{ m.cost }}</div>
+                  <div style="font-size:14px;margin-top:4px">est. cost</div>
+                </div>
+                <div style="padding:0 0 0 22px;border-left:1px solid var(--ts-border)">
+                  <div style="font-size:22px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums">{{ m.tokens }}</div>
+                  <div style="font-size:14px;margin-top:4px">tokens</div>
+                </div>
+              </div>
+              <sc-if value="{{ act.runPrimary }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ start }}" style="display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 24px;border-radius:8px;border:1px solid var(--ts-accent);background:var(--ts-accent);color:var(--ts-on-accent);font-size:16px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="filter: brightness(0.96)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m8 5 11 7-11 7z"></path></svg>
+                  {{ act.runPrimaryLabel }}
+                </button>
+              </sc-if>
+              <sc-if value="{{ act.exportEnabled }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ exportCsv }}" style="display:inline-flex;align-items:center;height:44px;padding:0 28px;border-radius:8px;border:1px solid {{ act.exportBorder }};background:{{ act.exportBg }};color:{{ act.exportColor }};font-size:16px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="filter: brightness(0.96)">Export CSV</button>
+              </sc-if>
+              <sc-if value="{{ act.exportDisabled }}" hint-placeholder-val="{{ false }}">
+                <button disabled="{{ true }}" style="display:inline-flex;align-items:center;height:44px;padding:0 28px;border-radius:8px;border:1px solid var(--ts-border);background:var(--ts-disabled-bg);color:var(--ts-disabled-text);font-size:16px;font-weight:500;cursor:not-allowed;white-space:nowrap">Export CSV</button>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;min-height:40px">
+              <sc-if value="{{ act.runPrimary }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ pickFile }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:12px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-accent);background:transparent;color:var(--ts-text);font-size:16px;cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M12 16V4m-5 5 5-5 5 5M5 16v4h14v-4"></path></svg>
+                  Upload questionnaire
+                </button>
+              </sc-if>
+              <sc-if value="{{ act.running }}" hint-placeholder-val="{{ false }}">
+                <div style="min-width:320px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:6px">
+                    <span role="status" style="display:inline-flex;align-items:center;gap:12px">{{ loaderSm }}Answering {{ m.done }} of {{ totalQuestions }}</span>
+                    <button onClick="{{ stop }}" style="display:inline-flex;align-items:center;gap:6px;border:0;border-radius:6px;background:transparent;color:var(--ts-secondary);height:32px;padding:0 6px;cursor:pointer" style-hover="color: var(--ts-text)">
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>Stop
+                    </button>
+                  </div>
+                  <div role="progressbar" aria-label="Questions processed" aria-valuemin="0" aria-valuemax="{{ totalQuestions }}" aria-valuenow="{{ m.done }}" style="height:4px;border-radius:4px;background:var(--ts-border);overflow:hidden">
+                    <div style="height:100%;width:{{ m.pct }};background:var(--ts-accent);transition:width 160ms"></div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ act.showLoadUpdate }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ loadUpdate }}" style="display:inline-flex;align-items:center;gap:12px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-accent);background:transparent;color:var(--ts-text);font-size:16px;cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg>
+                  {{ act.loadUpdateLabel }}
+                </button>
+              </sc-if>
+              <sc-if value="{{ act.updateLoaded }}" hint-placeholder-val="{{ false }}">
+                <button disabled="{{ true }}" style="display:inline-flex;align-items:center;gap:12px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-border);background:var(--ts-disabled-bg);color:var(--ts-disabled-text);font-size:16px;cursor:not-allowed;white-space:nowrap">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m5 12 4 4L19 6"></path></svg>
+                  {{ act.updateLoadedLabel }}
+                </button>
+              </sc-if>
+              <sc-if value="{{ act.rerunOutline }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ start }}" style="display:inline-flex;align-items:center;gap:12px;height:40px;padding:0 18px;border-radius:8px;border:1px solid var(--ts-accent);background:transparent;color:var(--ts-text);font-size:16px;cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m8 5 11 7-11 7z"></path></svg>
+                  Run again
+                </button>
+              </sc-if>
+              <sc-if value="{{ act.rerunPrimary }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ start }}" style="display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 18px;border-radius:8px;border:1px solid var(--ts-accent);background:var(--ts-accent);color:var(--ts-on-accent);font-size:16px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="filter: brightness(0.96)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M20 7v5h-5M4 17v-5h5M6.2 7a7 7 0 0 1 11.6-1L20 9M4 15l2.2 3A7 7 0 0 0 17.8 17"></path></svg>
+                  {{ act.rerunPrimaryLabel }}
+                </button>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+
+        <div ref="{{ tabsRef }}" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:10px;border-bottom:1px solid var(--ts-border);flex:none">
+          <div role="tablist" aria-label="Questionnaire views" style="display:flex;gap:38px;align-items:flex-end">
+            <button role="tab" aria-selected="{{ tabs.results }}" onClick="{{ showResults }}" style="height:46px;border:0;border-bottom:3px solid {{ tabs.resultsLine }};background:transparent;padding:0 6px;margin-bottom:-1px;color:{{ tabs.resultsColor }};font-size:18px;font-weight:{{ tabs.resultsWeight }};cursor:pointer">Results</button>
+            <button role="tab" aria-selected="{{ tabs.gaps }}" onClick="{{ showGaps }}" style="display:inline-flex;align-items:center;gap:12px;height:46px;border:0;border-bottom:3px solid {{ tabs.gapsLine }};background:transparent;padding:0 2px;margin-bottom:-1px;color:{{ tabs.gapsColor }};font-size:18px;font-weight:{{ tabs.gapsWeight }};cursor:pointer">Gaps <span style="display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 7px;border-radius:6px;background:var(--ts-neutral);color:var(--ts-text);font-size:16px;font-weight:500">{{ counts.red }}</span></button>
+          </div>
+          <ol aria-label="Questionnaire progress" style="display:flex;align-items:center;gap:10px;list-style:none;margin:0 0 9px;padding:0;color:var(--ts-secondary);font-size:15px">
+            <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+              <sc-if value="{{ st.sep }}" hint-placeholder-val="{{ true }}"><li aria-hidden="true" style="width:12px;height:1px;background:var(--ts-border-strong)"></li></sc-if>
+              <li aria-current="{{ st.aria }}" style="display:flex;align-items:center;gap:10px;white-space:nowrap;color:{{ st.color }};font-weight:{{ st.weight }}">
+                <span style="width:28px;height:28px;display:inline-grid;place-items:center;border-radius:50%;border:1px solid {{ st.ring }};background:{{ st.bg }};color:{{ st.numColor }};font-size:15px;font-weight:600">
+                  <sc-if value="{{ st.isDone }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round"><path d="m5 12 4 4L19 6"></path></svg></sc-if>
+                  <sc-if value="{{ st.notDone }}" hint-placeholder-val="{{ true }}">{{ st.n }}</sc-if>
+                </span>
+                {{ st.label }}
+              </li>
+            </sc-for>
+          </ol>
+        </div>
+
+        <sc-if value="{{ banner.idle }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;margin-top:14px;color:var(--ts-secondary);flex:none">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-green);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m5 12 4 4L19 6"></path></svg>
+            <span>{{ banner.idleText }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ banner.updated }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border:1px solid var(--ts-amber);border-radius:10px;background:var(--ts-amber-soft);flex:none;max-width:{{ bannerMax }}">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-amber);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6m0-10v.1"></path></svg>
+            <span>{{ banner.updatedText }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ banner.changed }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:8px 10px 8px 16px;border:1px solid var(--ts-border);border-radius:10px;background:var(--ts-surface);flex:none;max-width:{{ bannerMax }}">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-accent);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M20 7v5h-5M4 17v-5h5M6.2 7a7 7 0 0 1 11.6-1L20 9M4 15l2.2 3A7 7 0 0 0 17.8 17"></path></svg>
+            <span style="flex:1">{{ banner.changedText }}</span>
+            <sc-if value="{{ banner.showChangedBtn }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ filterChanged }}" style="height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">Show changed</button>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{ banner.stopped }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border:1px solid var(--ts-border);border-radius:10px;background:var(--ts-surface);flex:none;max-width:{{ bannerMax }}">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6m0-10v.1"></path></svg>
+            <span>Run stopped after {{ m.done }} of {{ totalQuestions }}. Completed results are kept; the run is incomplete, so export is off.</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ banner.error }}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border:1px solid var(--ts-red);border-radius:10px;background:var(--ts-red-soft);flex:none;max-width:{{ bannerMax }}">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-red);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v5m0 3v.1"></path></svg>
+            <span><strong>Run interrupted.</strong> {{ errorText }}</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabs.results }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin:22px 0 13px;flex:none;min-height:36px">
+            <div aria-label="Flag legend" style="display:flex;flex-wrap:wrap;column-gap:28px;row-gap:8px;align-items:center;font-size:15px;padding-left:4px;color:var(--ts-secondary);white-space:nowrap">
+              <span style="display:inline-flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--ts-green)"></span>Answered from policy</span>
+              <span style="display:inline-flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--ts-amber)"></span>Needs human review</span>
+              <span style="display:inline-flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:var(--ts-red)"></span>No source, not answered</span>
+            </div>
+            <sc-if value="{{ showMainChips }}" hint-placeholder-val="{{ false }}">
+              <div aria-label="Filter questions" style="display:flex;gap:8px">
+                <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="4">
+                  <button aria-pressed="{{ ch.active }}" onClick="{{ ch.onClick }}" style="height:36px;padding:0 14px;border-radius:8px;border:1px solid {{ ch.border }};background:{{ ch.bg }};color:{{ ch.color }};font-size:15px;font-weight:{{ ch.weight }};cursor:pointer;white-space:nowrap">{{ ch.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="flex:1 1 auto;min-height:220px;overflow:auto;background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow)">
+            <div role="table" aria-label="2026 CAIQ questions" style="min-width:1100px">
+              <div role="row" style="position:sticky;top:0;z-index:2;display:grid;grid-template-columns:104px 96px minmax(280px,1.1fr) 96px minmax(300px,1.3fr) 190px;align-items:center;height:48px;background:var(--ts-surface);font-size:15px;font-weight:500">
+                <span style="padding:0 18px">Flag</span><span style="padding:0 14px">ID</span><span style="padding:0 18px">Question</span><span style="padding:0 16px">Answer</span><span style="padding:0 16px">Comment</span><span style="padding:0 16px">Source</span>
+              </div>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+                <button id="{{ r.domId }}" role="row" aria-selected="{{ r.selected }}" disabled="{{ r.disabled }}" onClick="{{ r.onClick }}" style="display:grid;grid-template-columns:104px 96px minmax(280px,1.1fr) 96px minmax(300px,1.3fr) 190px;width:100%;min-height:68px;align-items:center;border:0;border-top:1px solid var(--ts-border);background:{{ r.bg }};color:var(--ts-text);text-align:left;padding:0;font-size:15.5px;line-height:23px;cursor:{{ r.cursor }};opacity:{{ r.opacity }};transition:background 160ms,opacity 160ms" style-hover="background: var(--ts-hover)">
+                  <span style="display:flex;align-items:center;gap:12px;padding-left:16px"><span style="width:4px;height:26px;border-radius:2px;flex:none;background:{{ r.bar }}"></span><span style="color:{{ r.labelColor }};white-space:nowrap">{{ r.flagLabel }}</span></span>
+                  <span style="padding:8px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;white-space:nowrap">
+                    <span>{{ r.id }}</span>
+                    <sc-if value="{{ r.changed }}" hint-placeholder-val="{{ false }}"><span style="padding:1px 6px;border-radius:5px;background:var(--ts-accent-soft);color:var(--ts-accent);font-size:12px;font-weight:600;line-height:16px">changed</span></sc-if>
+                  </span>
+                  <span style="padding:16px 18px;text-wrap:pretty">{{ r.text }}</span>
+                  <span style="padding:8px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap">
+                    <sc-if value="{{ r.hasAnswer }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:30px;padding:0 9px;border-radius:8px;background:var(--ts-neutral);color:{{ r.answerColor }};font-size:{{ r.answerSize }};font-weight:500">{{ r.answer }}</span></sc-if>
+                    <sc-if value="{{ r.writing }}" hint-placeholder-val="{{ false }}">{{ loaderXs }}</sc-if>
+                    <sc-if value="{{ r.noAnswer }}" hint-placeholder-val="{{ false }}"><span style="color:var(--ts-secondary);font-size:15px">{{ r.placeholder }}</span></sc-if>
+                  </span>
+                  <span style="padding:16px 20px 16px 16px;color:var(--ts-secondary);font-size:15px;line-height:23px;text-wrap:pretty">{{ r.comment }}</span>
+                  <span onClick="{{ r.onSource }}" title="Open in policy" style="padding:16px;color:{{ r.sourceColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline;text-decoration-color:var(--ts-border-strong);text-underline-offset:4px" style-hover="color: var(--ts-accent)">{{ r.source }}</span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:28px 18px;border-top:1px solid var(--ts-border);color:var(--ts-secondary)">No questions match this filter.</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabs.gaps }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:28px;flex:none;max-width:{{ bannerMax }}">
+            <h2 style="margin:0;font-size:24px;font-weight:600;letter-spacing:-0.4px">{{ gaps.title }}</h2>
+            <p style="margin:8px 0 0;color:var(--ts-secondary)">{{ gaps.sub }}</p>
+          </div>
+          <sc-if value="{{ gaps.hasRows }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:20px;flex:0 1 auto;min-height:0;overflow:auto;background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow)">
+              <div style="min-width:1000px">
+                <div style="display:grid;grid-template-columns:150px minmax(0,1.5fr) 120px minmax(0,1fr) 180px;align-items:center;height:48px;font-size:15px;font-weight:500">
+                  <span style="padding:0 18px 0 32px">ID</span><span style="padding:0 16px">Question</span><span style="padding:0 16px">Answer</span><span style="padding:0 16px">Reason</span><span style="padding:0 16px">Action</span>
+                </div>
+                <sc-for list="{{ gaps.rows }}" as="g" hint-placeholder-count="2">
+                  <div style="display:grid;grid-template-columns:150px minmax(0,1.5fr) 120px minmax(0,1fr) 180px;align-items:center;min-height:76px;border-top:1px solid var(--ts-border);background:{{ g.bg }}">
+                    <span style="display:flex;align-items:center;gap:12px;padding-left:16px"><span style="width:4px;height:26px;border-radius:2px;background:var(--ts-red)"></span><span>{{ g.id }}</span></span>
+                    <span style="padding:14px 16px">{{ g.text }}</span>
+                    <span style="padding:0 16px"><span style="display:inline-flex;align-items:center;height:30px;padding:0 9px;border-radius:8px;background:var(--ts-neutral);color:var(--ts-secondary);font-size:15px;font-weight:500">Unknown</span></span>
+                    <span style="padding:14px 16px;color:var(--ts-secondary)">{{ g.reason }}</span>
+                    <span style="padding:0 16px"><button onClick="{{ g.onView }}" style="height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">View question</button></span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <div style="flex:1"></div>
+        </sc-if>
+
+        <sc-if value="{{ feed.has }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:none;margin-top:12px;border:1px solid var(--ts-border);border-radius:12px;background:var(--ts-surface);overflow:hidden;max-width:{{ bannerMax }}">
+            <button onClick="{{ feed.toggle }}" aria-expanded="{{ feed.open }}" style="width:100%;display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border:0;background:transparent;color:var(--ts-text);font-size:15px;font-weight:600;cursor:pointer;text-align:left">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none;transform:{{ feed.chevron }};transition:transform 160ms;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m9 5 7 7-7 7"></path></svg>
+              Engine<span style="font-weight:400;color:var(--ts-secondary)">{{ feed.count }}</span>
+            </button>
+            <sc-if value="{{ feed.open }}" hint-placeholder-val="{{ false }}">
+              <div ref="{{ feedRef }}" style="height:170px;overflow:auto;border-top:1px solid var(--ts-border);padding:6px 14px 10px;font-family:var(--ts-mono);font-size:14px;line-height:1.7">
+                <sc-for list="{{ feed.lines }}" as="l" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:64px 84px 80px 160px minmax(0,1fr) 72px;gap:8px;white-space:nowrap">
+                    <span style="color:var(--ts-secondary);white-space:pre">{{ l.t }}</span><span>{{ l.id }}</span><span style="color:{{ l.color }}">{{ l.step }}</span><span style="color:var(--ts-secondary);overflow:hidden;text-overflow:ellipsis">{{ l.model }}</span><span style="overflow:hidden;text-overflow:ellipsis">{{ l.detail }}</span><span style="color:var(--ts-secondary);text-align:right">{{ l.ms }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <div style="flex:none;display:flex;justify-content:space-between;gap:16px;padding:16px 0 20px 2px;font-size:14px;font-family:var(--ts-mono)">
+          <span>{{ modelLine }}</span>
+          <span style="color:var(--ts-secondary)">{{ engineLine }}</span>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ show.reference }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="2025 questionnaire" style="padding-bottom:48px">
+        <div style="margin-top:36px">
+          <h1 style="margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-1px">2025 questionnaire</h1>
+          <p style="margin:10px 0 0;font-size:18px;color:var(--ts-secondary)">{{ pastCount }} imported answers · comparison reference</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:28px;max-width:860px;padding:12px 16px;border:1px solid var(--ts-border);border-radius:10px;background:var(--ts-surface)">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6m0-10v.1"></path></svg>
+          <span>Imported answers are historical input, not policy-grounded results. A run compares them with the current policies.</span>
+        </div>
+        <div style="margin-top:24px;background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow);overflow:hidden">
+          <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 110px minmax(0,1.3fr);height:48px;align-items:center;font-size:15px;font-weight:500">
+            <span style="padding:0 20px">Ref</span><span style="padding:0 16px">Question</span><span style="padding:0 16px">Answer</span><span style="padding:0 16px">Imported answer</span>
+          </div>
+          <sc-for list="{{ pastRows }}" as="p" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:110px minmax(0,1fr) 110px minmax(0,1.3fr);align-items:center;min-height:60px;border-top:1px solid var(--ts-border)">
+              <span style="padding:12px 20px;font-family:var(--ts-mono);font-size:15px">{{ p.ref }}</span>
+              <span style="padding:12px 16px">{{ p.question }}</span>
+              <span style="padding:12px 16px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:30px;padding:0 9px;border-radius:8px;background:var(--ts-neutral);font-weight:500">{{ p.answer }}</span></span>
+              <span style="padding:14px 16px;color:var(--ts-secondary);font-size:15px;line-height:1.6;text-wrap:pretty">{{ p.comment }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ show.policies }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Policies" style="padding-bottom:48px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-top:36px">
+          <div>
+            <h1 style="margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-1px">Policies</h1>
+            <p style="margin:10px 0 0;font-size:18px;color:var(--ts-secondary)">Source documents for {{ company }} · each run keeps the versions it used</p>
+          </div>
+
+        </div>
+
+        <div style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;margin-top:28px;align-items:start">
+          <div style="position:sticky;top:12px;display:flex;flex-direction:column;gap:16px">
+            <div role="listbox" aria-label="Policies" style="background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow);overflow:hidden">
+              <sc-for list="{{ pol.rows }}" as="p" hint-placeholder-count="3">
+                <button role="option" onClick="{{ p.onOpen }}" style="width:100%;display:flex;gap:14px;align-items:flex-start;padding:14px 16px 14px 13px;border:0;border-left:3px solid {{ p.bar }};border-bottom:1px solid var(--ts-border);background:{{ p.bg }};color:var(--ts-text);text-align:left;cursor:pointer;transition:background 160ms" style-hover="background: var(--ts-hover)">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;margin-top:1px;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg>
+                  <span style="min-width:0;flex:1">
+                    <span style="display:block;font-weight:600;color:{{ p.nameColor }}">{{ p.name }}</span>
+                    <span style="display:block;margin-top:3px;font-size:15px;color:var(--ts-secondary)">{{ p.short }} · {{ p.version }} · {{ p.sections }} sections</span>
+                    <sc-if value="{{ p.hasNote }}" hint-placeholder-val="{{ false }}"><span style="display:inline-block;margin-top:6px;padding:1px 8px;border-radius:6px;background:var(--ts-amber-soft);color:var(--ts-amber);font-size:14px">{{ p.note }}</span></sc-if>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ pv.show }}" hint-placeholder-val="{{ false }}">
+              <nav aria-label="Sections" style="background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow);padding:10px 8px;max-height:calc(100vh - 360px);min-height:160px;overflow-y:auto;overflow-x:hidden">
+                <div style="padding:4px 10px 8px;font-size:14px;font-weight:600;color:var(--ts-secondary)">Sections</div>
+                <sc-for list="{{ pv.toc }}" as="t" hint-placeholder-count="6">
+                  <button onClick="{{ t.onClick }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:{{ t.bg }};color:{{ t.color }};font-size:15px;text-align:left;cursor:pointer" style-hover="background: var(--ts-hover)">
+                    <span>{{ t.label }}</span>
+                    <sc-if value="{{ t.changed }}" hint-placeholder-val="{{ false }}"><span aria-label="changed" style="width:8px;height:8px;border-radius:50%;flex:none;background:var(--ts-amber)"></span></sc-if>
+                  </button>
+                </sc-for>
+              </nav>
+            </sc-if>
+          </div>
+
+          <div style="min-width:0">
+            <sc-if value="{{ pv.loading }}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display:flex;align-items:center;gap:14px;padding:24px 4px;color:var(--ts-secondary)">{{ loaderSm }}Loading policy…</div>
+            </sc-if>
+            <sc-if value="{{ pv.show }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow)">
+                <div style="padding:20px 24px 16px;border-bottom:1px solid var(--ts-border)">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+                    <div>
+                      <h2 style="margin:0;font-size:24px;font-weight:600;letter-spacing:-0.4px">{{ pv.title }}</h2>
+                      <div style="margin-top:4px;color:var(--ts-secondary)">{{ pv.meta }}</div>
+                    </div>
+                    <sc-if value="{{ pv.hasToggle }}" hint-placeholder-val="{{ false }}">
+                      <div role="tablist" aria-label="Version" style="display:inline-flex;padding:3px;gap:2px;border:1px solid var(--ts-border);border-radius:10px;background:var(--ts-canvas)">
+                        <sc-for list="{{ pv.modes }}" as="t" hint-placeholder-count="3">
+                          <button role="tab" aria-selected="{{ t.active }}" onClick="{{ t.onClick }}" style="display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:0;border-radius:7px;background:{{ t.bg }};color:{{ t.color }};font-weight:{{ t.weight }};box-shadow:{{ t.shadow }};cursor:pointer;white-space:nowrap">{{ t.label }}<sc-if value="{{ t.dot }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:var(--ts-amber)"></span></sc-if></button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap">
+                    <label style="flex:1;min-width:240px;display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border:1px solid var(--ts-border-strong);border-radius:8px;background:var(--ts-canvas)">
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="6"></circle><path d="m20 20-4.5-4.5"></path></svg>
+                      <input aria-label="Find in policy" placeholder="Find in this policy, e.g. backup" value="{{ pv.query }}" onChange="{{ pv.onQuery }}" style="flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ts-text);font-size:16px">
+                      <sc-if value="{{ pv.hasQuery }}" hint-placeholder-val="{{ false }}"><button onClick="{{ pv.clearQuery }}" aria-label="Clear search" style="border:0;background:transparent;color:var(--ts-secondary);cursor:pointer;padding:4px;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m6 6 12 12M6 18 18 6"></path></svg></button></sc-if>
+                    </label>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:15px;color:var(--ts-secondary)">
+                    <span>{{ pv.resultNote }}</span>
+                    <sc-if value="{{ pv.diffOn }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:flex;align-items:center;gap:14px">
+                        <span style="display:inline-flex;align-items:center;gap:6px"><span style="padding:0 6px;border-radius:4px;background:var(--ts-red-soft);color:var(--ts-red);text-decoration:line-through">old</span>removed</span>
+                        <span style="display:inline-flex;align-items:center;gap:6px"><span style="padding:0 6px;border-radius:4px;background:var(--ts-green-soft);color:var(--ts-green)">new</span>added</span>
+                      </span>
+                    </sc-if>
+                  </div>
+                </div>
+                <sc-if value="{{ pv.up.show }}" hint-placeholder-val="{{ false }}">
+                  <div role="status" style="margin:16px 24px 0;display:flex;align-items:flex-start;gap:14px;padding:16px 18px;border-radius:10px;border:1px solid {{ pv.up.border }};background:{{ pv.up.bg }}">
+                    <span aria-hidden="true" style="width:32px;height:32px;flex:none;border-radius:8px;display:grid;place-items:center;background:var(--ts-surface);border:1px solid var(--ts-border);color:{{ pv.up.iconColor }}">
+                      <sc-if value="{{ pv.up.pending }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M12 4v10m-4-4 4 4 4-4M5 20h14"></path></svg></sc-if>
+                      <sc-if value="{{ pv.up.adopted }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M20 7v5h-5M4 17v-5h5M6.2 7a7 7 0 0 1 11.6-1L20 9M4 15l2.2 3A7 7 0 0 0 17.8 17"></path></svg></sc-if>
+                      <sc-if value="{{ pv.up.inUse }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="m5 12 4 4L19 6"></path></svg></sc-if>
+                    </span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:17px;font-weight:600">{{ pv.up.title }}</div>
+                      <div style="margin-top:4px;line-height:1.45">{{ pv.up.text }}</div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex:none;align-self:center;flex-wrap:wrap;justify-content:flex-end">
+                      <sc-if value="{{ pv.up.hasSecondary }}" hint-placeholder-val="{{ true }}">
+                        <button onClick="{{ pv.up.onSecondary }}" style="height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">{{ pv.up.secondary }}</button>
+                      </sc-if>
+                      <button onClick="{{ pv.up.onPrimary }}" style="height:40px;padding:0 18px;border-radius:8px;border:1px solid var(--ts-accent);background:var(--ts-accent);color:var(--ts-on-accent);font-weight:500;cursor:pointer;white-space:nowrap" style-hover="filter: brightness(0.96)">{{ pv.up.primary }}</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <div style="padding:4px 24px 24px">
+                  <sc-if value="{{ pv.noMatch }}" hint-placeholder-val="{{ false }}"><p style="margin:24px 0 0;color:var(--ts-secondary)">No section mentions that. Try another word.</p></sc-if>
+                  <sc-for list="{{ pv.sections }}" as="sec" hint-placeholder-count="4">
+                    <div id="{{ sec.domId }}" style="margin-top:16px;padding:16px 18px;border:1px solid {{ sec.border }};border-radius:10px">
+                      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <span style="font-size:18px;font-weight:600">{{ sec.heading }}</span>
+                        <span style="font-family:var(--ts-mono);font-size:14px;color:var(--ts-secondary)">{{ sec.sid }}</span>
+                        <sc-if value="{{ sec.changed }}" hint-placeholder-val="{{ false }}"><span style="padding:2px 8px;border-radius:6px;background:var(--ts-amber-soft);color:var(--ts-amber);font-size:14px">{{ sec.changedLabel }}</span></sc-if>
+                      </div>
+                      <p style="margin:10px 0 0;white-space:pre-line;line-height:1.55;user-select:text"><sc-for list="{{ sec.segs }}" as="sg" hint-placeholder-count="1"><span style="background:{{ sg.bg }};color:{{ sg.color }};text-decoration:{{ sg.deco }};border-radius:3px">{{ sg.t }}</span></sc-for></p>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ show.connectors }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Connectors" style="padding-bottom:56px">
+        <div style="margin-top:36px">
+          <h1 style="margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-1px">Connectors</h1>
+          <p style="margin:10px 0 0;font-size:18px;color:var(--ts-secondary)">Bring policies and questionnaires in from where they already live.</p>
+        </div>
+        <div style="margin-top:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div role="tablist" aria-label="Filter connectors" style="display:inline-flex;padding:3px;gap:2px;border:1px solid var(--ts-border);border-radius:10px;background:var(--ts-surface)">
+            <sc-for list="{{ conn.filters }}" as="cf" hint-placeholder-count="3">
+              <button role="tab" aria-selected="{{ cf.active }}" onClick="{{ cf.onClick }}" style="height:34px;padding:0 14px;border:0;border-radius:7px;background:{{ cf.bg }};color:{{ cf.color }};font-weight:{{ cf.weight }};cursor:pointer;white-space:nowrap">{{ cf.label }}</button>
+            </sc-for>
+          </div>
+          <span style="color:var(--ts-secondary)">{{ conn.summary }}</span>
+        </div>
+        <sc-for list="{{ conn.groups }}" as="g" hint-placeholder-count="3">
+          <div style="margin-top:44px">
+            <h2 style="margin:0;font-size:21px;font-weight:600;letter-spacing:-0.3px">{{ g.title }}</h2>
+            <p style="margin:6px 0 0;max-width:680px;color:var(--ts-secondary);line-height:1.5;text-wrap:pretty">{{ g.sub }}</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:18px">
+              <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="3">
+                <button onClick="{{ c.onOpen }}" style="display:flex;flex-direction:column;gap:14px;min-height:196px;padding:22px 22px 18px;border:1px solid {{ c.ring }};border-radius:12px;background:var(--ts-surface);box-shadow:var(--ts-shadow);color:var(--ts-text);text-align:left;cursor:pointer;transition:background 160ms" style-hover="background: var(--ts-hover)">
+                  <span style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%">
+                    <span style="width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:#FFFFFF;border:1px solid var(--ts-border);box-shadow:0 1px 2px #0000000F;flex:none"><sc-if value="{{ c.hasLogo }}" hint-placeholder-val="{{ false }}"><span style="display:block;width:26px;height:26px;background:{{ c.logoBg }}"></span></sc-if><sc-if value="{{ c.noLogo }}" hint-placeholder-val="{{ false }}"><span style="font-size:{{ c.monoSize }};font-weight:700;letter-spacing:0.2px;color:#5145CD">{{ c.mono }}</span></sc-if></span>
+                    <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:8px;background:{{ c.badgeBg }};color:{{ c.badgeColor }};font-size:14px;white-space:nowrap">
+                      <sc-if value="{{ c.busy }}" hint-placeholder-val="{{ false }}">{{ loaderXs }}</sc-if>{{ c.badge }}
+                    </span>
+                  </span>
+                  <span>
+                    <span style="display:block;font-size:17px;font-weight:600">{{ c.name }}</span>
+                    <span style="display:block;margin-top:6px;font-size:15.5px;color:var(--ts-secondary);line-height:1.5;text-wrap:pretty">{{ c.desc }}</span>
+                  </span>
+                  <span style="margin-top:auto;padding-top:14px;border-top:1px solid var(--ts-border);font-size:14.5px;color:var(--ts-secondary)">{{ c.meta }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ show.benchmark }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Benchmark" style="padding-bottom:48px">
+        <div style="margin-top:36px">
+          <h1 style="margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-1px">Benchmark</h1>
+          <p style="margin:10px 0 0;font-size:18px;color:var(--ts-secondary)">Same questionnaire. Same source policies. Scored against an answer key the pipeline never reads.</p>
+        </div>
+        <sc-if value="{{ bench.missing }}" hint-placeholder-val="{{ false }}">
+          <p style="margin-top:32px;color:var(--ts-secondary)">No benchmark results yet. Run npm run benchmark in the repo.</p>
+        </sc-if>
+        <sc-if value="{{ bench.ready }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:1040px;margin-top:36px;background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow);overflow:hidden">
+            <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);align-items:stretch;font-weight:500">
+              <span style="padding:16px 24px;display:flex;align-items:center">Metric</span>
+              <span style="padding:14px 24px;border-left:1px solid var(--ts-border)">Open models<span style="display:block;color:var(--ts-secondary);font-weight:400;font-size:15px;margin-top:2px">{{ bench.openModels }}</span></span>
+              <span style="padding:14px 24px;border-left:1px solid var(--ts-border)">Closed model<span style="display:block;color:var(--ts-secondary);font-weight:400;font-size:15px;margin-top:2px">{{ bench.closedModels }}</span></span>
+            </div>
+            <sc-for list="{{ bench.rows }}" as="b" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);border-top:1px solid var(--ts-border);min-height:60px;align-items:stretch">
+                <span style="padding:18px 24px">{{ b.label }}</span>
+                <span style="padding:18px 24px;border-left:1px solid var(--ts-border);font-variant-numeric:tabular-nums">{{ b.open }}</span>
+                <span style="padding:18px 24px;border-left:1px solid var(--ts-border);font-variant-numeric:tabular-nums">{{ b.closed }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <h2 style="margin:44px 0 0;font-size:24px;font-weight:600;letter-spacing:-0.4px">The 8 trap questions</h2>
+          <p style="margin:8px 0 0;color:var(--ts-secondary)">Outdated answers, contradictions, uncovered topics and a correct No.</p>
+          <div style="max-width:1040px;margin-top:20px;background:var(--ts-surface);border:1px solid var(--ts-border);border-radius:12px;box-shadow:var(--ts-shadow);overflow:hidden">
+            <div style="display:grid;grid-template-columns:120px minmax(0,1.6fr) 170px 200px;height:48px;align-items:center;font-size:15px;font-weight:500">
+              <span style="padding:0 20px">ID</span><span style="padding:0 16px">Trap</span><span style="padding:0 16px">Expected</span><span style="padding:0 16px">Open models</span>
+            </div>
+            <sc-for list="{{ bench.traps }}" as="t" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:120px minmax(0,1.6fr) 170px 200px;align-items:center;min-height:64px;border-top:1px solid var(--ts-border)">
+                <span style="padding:12px 20px">{{ t.id }}</span>
+                <span style="padding:12px 16px"><span style="font-weight:500">{{ t.trap }}</span><span style="display:block;color:var(--ts-secondary);margin-top:2px">{{ t.detail }}</span></span>
+                <span style="padding:12px 16px">{{ t.expected }}</span>
+                <span style="padding:12px 16px;display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;flex:none;background:{{ t.color }}"></span><span>{{ t.result }}</span><span style="color:var(--ts-secondary)">{{ t.mark }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+          <p style="margin:20px 0 0;color:var(--ts-secondary)">Generated {{ bench.generated }} · facts judge {{ bench.judge }}</p>
+        </sc-if>
+      </section>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ panel.open }}" hint-placeholder-val="{{ false }}">
+    <aside aria-labelledby="ts-panel-title" style="position:fixed;right:12px;top:{{ panelTop }};bottom:12px;width:566px;z-index:40;display:flex;flex-direction:column;border:1px solid var(--ts-border);border-radius:16px;background:var(--ts-surface-raised);box-shadow:var(--ts-panel-shadow)">
+      <div style="flex:none;display:flex;justify-content:space-between;align-items:center;gap:12px;height:54px;padding:0 14px 0 28px;border-bottom:1px solid var(--ts-border)">
+        <span style="font-size:16px;font-weight:600">{{ panel.id }}</span>
+        <div aria-label="Filter questions" style="display:flex;gap:6px">
+          <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="4">
+            <button aria-pressed="{{ ch.active }}" onClick="{{ ch.onClick }}" style="height:26px;padding:0 10px;border-radius:13px;border:1px solid {{ ch.border }};background:{{ ch.bg }};color:{{ ch.color }};font-size:12.5px;font-weight:{{ ch.weight }};cursor:pointer;white-space:nowrap">{{ ch.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:none;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 12px 0 28px">
+        <h2 id="ts-panel-title" style="margin:0;padding-top:6px;font-size:22px;line-height:1.25;font-weight:600;letter-spacing:-0.3px">{{ panel.question }}</h2>
+        <button ref="{{ closeRef }}" onClick="{{ closePanel }}" aria-label="Close answer panel" style="flex:none;width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--ts-text);cursor:pointer" style-hover="background: var(--ts-hover)">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m6 6 12 12M6 18 18 6"></path></svg>
+        </button>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;padding:12px 22px 24px 28px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:10px;background:var(--ts-neutral);color:{{ panel.answerColor }};font-size:19px;font-weight:500">{{ panel.answer }}</span>
+          <span aria-hidden="true" style="width:1px;height:26px;background:var(--ts-border)"></span>
+          <span style="display:inline-flex;align-items:center;gap:12px;color:{{ panel.flagColor }};font-size:16px"><span style="width:13px;height:13px;border-radius:50%;background:{{ panel.flagColor }}"></span>{{ panel.flagLabel }}</span>
+          </div>
+        <sc-if value="{{ panel.hasReason }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:10px;font-size:14.5px;line-height:1.5;color:var(--ts-secondary)">{{ panel.reason }}</div>
+        </sc-if>
+
+        <sc-if value="{{ panel.hasComment }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:22px 0 0;max-width:62ch;font-size:16.5px;line-height:1.7;color:var(--ts-text);text-wrap:pretty">{{ panel.comment }}</p>
+        </sc-if>
+        <sc-if value="{{ panel.hasWhy }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:20px;max-width:62ch;padding:14px 18px 16px;border-radius:12px;background:var(--ts-neutral)"><div style="font-size:13px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;color:var(--ts-secondary)">Why this answer</div><div style="margin-top:6px;font-size:15.5px;line-height:1.65;color:var(--ts-secondary);text-wrap:pretty">{{ panel.why }}</div></div>
+        </sc-if>
+        <sc-if value="{{ panel.changed }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:28px">
+            <div style="font-size:18px;font-weight:600">Changed since previous run</div>
+            <div style="margin-top:6px;color:var(--ts-accent)">{{ panel.changeReasons }}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px">
+              <div style="padding:14px 16px;border:1px solid var(--ts-border);border-radius:10px">
+                <div style="font-size:15px;color:var(--ts-secondary)">{{ panel.prevHeader }}</div>
+                <div style="margin-top:8px;font-size:15.5px;line-height:1.65;text-wrap:pretty"><strong style="font-weight:600">{{ panel.prevAnswer }}.</strong> <sc-for list="{{ panel.prevSegs }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.color }};font-weight:{{ sg.weight }}">{{ sg.t }}</span></sc-for></div>
+              </div>
+              <div style="padding:14px 16px;border:1px solid var(--ts-accent);border-radius:10px">
+                <div style="font-size:15px;color:var(--ts-secondary)">{{ panel.curHeader }}</div>
+                <div style="margin-top:8px;font-size:15.5px;line-height:1.65;text-wrap:pretty"><strong style="font-weight:600">{{ panel.answer }}.</strong> <sc-for list="{{ panel.curSegs }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.color }};font-weight:{{ sg.weight }}">{{ sg.t }}</span></sc-for></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ panel.isRed }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:28px">
+            <div style="font-size:18px;font-weight:600">Evidence</div>
+            <div style="margin-top:12px;padding:16px;border:1px solid var(--ts-red);border-radius:10px;font-size:17px;line-height:1.45">No source in the current policies covers this question. Not answered.</div>
+            <div style="margin-top:12px;color:var(--ts-secondary)">{{ panel.redReason }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ panel.hasSources }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:28px">
+            <div style="font-size:18px;font-weight:600">Evidence</div>
+            <sc-for list="{{ panel.sources }}" as="src" hint-placeholder-count="1">
+              <div style="margin-top:6px">
+                <button onClick="{{ src.onOpen }}" title="Open in policy" style="display:block;border:0;background:transparent;padding:0;margin:0 0 10px;color:var(--ts-secondary);font-size:15.5px;cursor:pointer;text-align:left" style-hover="color: var(--ts-accent)">{{ src.label }}</button>
+                <blockquote style="margin:0 0 14px;padding:14px 16px;border:1px solid var(--ts-border);border-radius:10px;font-size:17px;line-height:1.45;user-select:text">{{ src.quote }}</blockquote>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ panel.isConflict }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:28px">
+            <div style="font-size:18px;font-weight:600">Conflicting evidence</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px">
+              <sc-for list="{{ panel.conflictCards }}" as="cc" hint-placeholder-count="2">
+                <div style="padding:14px 16px;border:1px solid var(--ts-border);border-left:3px solid var(--ts-amber);border-radius:10px">
+                  <button onClick="{{ cc.onOpen }}" title="Open in policy" style="display:block;border:0;background:transparent;padding:0;margin:0 0 8px;color:var(--ts-secondary);font-size:15px;cursor:pointer;text-align:left" style-hover="color: var(--ts-accent)">{{ cc.label }}</button>
+                  <div style="font-size:16px;line-height:1.45;user-select:text">{{ cc.quote }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:12px;color:var(--ts-amber)">{{ panel.whatDiffers }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ panel.hasCompare }}" hint-placeholder-val="{{ false }}">
+          <div style="height:1px;background:var(--ts-border);margin:24px 0 20px"></div>
+          <div style="font-size:18px;font-weight:600">Compare</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+            <div style="padding:14px 16px;border:1px solid var(--ts-border);border-radius:10px;min-height:170px">
+              <div style="font-size:15.5px">{{ panel.oldHeader }}</div>
+              <div style="margin-top:14px;font-size:17px;line-height:1.45"><sc-for list="{{ panel.oldSegs }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.color }};font-weight:{{ sg.weight }}">{{ sg.t }}</span></sc-for></div>
+            </div>
+            <div style="padding:14px 16px;border:1px solid var(--ts-border);border-radius:10px;min-height:170px">
+              <div style="font-size:15.5px">Current policy</div>
+              <div style="margin-top:14px;font-size:17px;line-height:1.45"><sc-for list="{{ panel.newSegs }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.color }};font-weight:{{ sg.weight }}">{{ sg.t }}</span></sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="flex:none;display:flex;justify-content:space-between;gap:12px;margin:0 28px;padding:16px 0;border-top:1px solid var(--ts-border)">
+        <button onClick="{{ prevQuestion }}" disabled="{{ panel.prevDisabled }}" style="display:inline-flex;align-items:center;gap:12px;height:48px;padding:0 24px;border-radius:8px;border:1px solid var(--ts-border-strong);background:transparent;color:{{ panel.prevColor }};font-size:16px;cursor:{{ panel.prevCursor }}" style-hover="background: var(--ts-hover)">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12H5m5-5-5 5 5 5"></path></svg>Previous
+        </button>
+        <span aria-hidden="true" style="display:flex;align-items:center;gap:6px;color:var(--ts-secondary);font-size:14px">
+          <kbd style="min-width:24px;height:24px;padding:0 6px;display:inline-grid;place-items:center;border:1px solid var(--ts-border);border-bottom-width:2px;border-radius:6px;font-family:var(--ts-font);font-size:13px">↑</kbd><kbd style="min-width:24px;height:24px;padding:0 6px;display:inline-grid;place-items:center;border:1px solid var(--ts-border);border-bottom-width:2px;border-radius:6px;font-family:var(--ts-font);font-size:13px">↓</kbd><span style="margin-right:8px">move</span><kbd style="height:24px;padding:0 7px;display:inline-grid;place-items:center;border:1px solid var(--ts-border);border-bottom-width:2px;border-radius:6px;font-family:var(--ts-font);font-size:13px">esc</kbd><span>close</span>
+        </span>
+        <button onClick="{{ nextQuestion }}" disabled="{{ panel.nextDisabled }}" style="display:inline-flex;align-items:center;gap:12px;height:48px;padding:0 24px;border-radius:8px;border:1px solid var(--ts-border-strong);background:transparent;color:{{ panel.nextColor }};font-size:16px;cursor:{{ panel.nextCursor }}" style-hover="background: var(--ts-hover)">
+          Next<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14m-5-5 5 5-5 5"></path></svg>
+        </button>
+      </div>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{ conn.open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeConn }}" style="position:fixed;inset:0;z-index:60;background:rgba(8,10,14,0.5)"></div>
+    <aside role="dialog" aria-label="Connector" style="position:fixed;right:0;top:0;bottom:0;width:580px;max-width:100vw;z-index:61;display:flex;flex-direction:column;background:var(--ts-surface-raised);border-left:1px solid var(--ts-border);box-shadow:var(--ts-panel-shadow)">
+      <div style="flex:none;display:flex;align-items:flex-start;gap:16px;padding:22px 16px 18px 28px;border-bottom:1px solid var(--ts-border)">
+        <span style="width:56px;height:56px;flex:none;border-radius:14px;display:grid;place-items:center;background:#FFFFFF;border:1px solid var(--ts-border);box-shadow:0 1px 2px #0000000F"><sc-if value="{{ conn.d.hasLogo }}" hint-placeholder-val="{{ false }}"><span style="display:block;width:30px;height:30px;background:{{ conn.d.logoBg }}"></span></sc-if><sc-if value="{{ conn.d.noLogo }}" hint-placeholder-val="{{ false }}"><span style="font-size:{{ conn.d.monoSize }};font-weight:700;letter-spacing:0.2px;color:#5145CD">{{ conn.d.mono }}</span></sc-if></span>
+        <div style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-0.4px">{{ conn.d.name }}</h2>
+          <span style="display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:3px 10px;border-radius:8px;background:{{ conn.d.badgeBg }};color:{{ conn.d.badgeColor }};font-size:14.5px"><sc-if value="{{ conn.d.connecting }}" hint-placeholder-val="{{ false }}">{{ loaderXs }}</sc-if>{{ conn.d.badge }}</span>
+        </div>
+        <button onClick="{{ closeConn }}" aria-label="Close" style="flex:none;width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--ts-text);cursor:pointer" style-hover="background: var(--ts-hover)">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m6 6 12 12M6 18 18 6"></path></svg>
+        </button>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;padding:20px 28px 28px">
+        <p style="margin:0;font-size:17px;line-height:1.55;text-wrap:pretty">{{ conn.d.desc }}</p>
+        <sc-if value="{{ conn.d.builtin }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:24px;font-size:18px;font-weight:600">In this workspace</div>
+          <div style="margin-top:10px;border:1px solid var(--ts-border);border-radius:10px;overflow:hidden">
+            <sc-for list="{{ conn.d.docs }}" as="doc" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--ts-border)"><span>{{ doc.name }}</span><span style="color:var(--ts-secondary);white-space:nowrap">{{ doc.meta }}</span></div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ conn.d.notBuiltin }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:24px;font-size:18px;font-weight:600">{{ conn.d.syncTitle }}</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ conn.d.syncs }}" as="sy" hint-placeholder-count="3">
+              <div style="display:flex;gap:12px;align-items:flex-start"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;margin-top:1px;color:var(--ts-green);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m5 12 4 4L19 6"></path></svg><span style="line-height:1.5;text-wrap:pretty">{{ sy.t }}</span></div>
+            </sc-for>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--ts-neutral)">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;margin-top:1px;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6m0-10v.1"></path></svg>
+            <span style="font-size:15px;line-height:1.5;text-wrap:pretty">{{ conn.d.access }}</span>
+          </div>
+          <div style="margin-top:24px;font-size:18px;font-weight:600">Settings</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ conn.d.fields }}" as="f" hint-placeholder-count="2">
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:15px;color:var(--ts-secondary)">{{ f.label }}</span>
+                <span style="display:flex;align-items:center;gap:8px;height:44px;padding:0 6px 0 12px;border:1px solid var(--ts-border-strong);border-radius:8px;background:{{ f.inputBg }}">
+                  <input value="{{ f.value }}" placeholder="{{ f.placeholder }}" readOnly="{{ f.readOnly }}" onChange="{{ f.onChange }}" style="flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;color:var(--ts-text);font-family:{{ f.font }};font-size:{{ f.size }};outline:none;text-overflow:ellipsis">
+                  <sc-if value="{{ f.readOnly }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ f.onCopy }}" style="flex:none;height:32px;padding:0 12px;border:1px solid var(--ts-border);border-radius:6px;background:var(--ts-surface-raised);color:var(--ts-text);font-size:14px;cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">{{ f.copyLabel }}</button></sc-if>
+                </span>
+              </label>
+            </sc-for>
+          </div>
+          <sc-if value="{{ conn.d.hasSchedule }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-top:18px;font-size:15px;color:var(--ts-secondary)">Sync</div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <sc-for list="{{ conn.d.schedule }}" as="sc" hint-placeholder-count="3">
+                <button onClick="{{ sc.onClick }}" style="height:36px;padding:0 14px;border-radius:8px;border:1px solid {{ sc.border }};background:{{ sc.bg }};color:{{ sc.color }};font-weight:{{ sc.weight }};cursor:pointer">{{ sc.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ conn.d.connected }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:20px;display:flex;align-items:center;gap:10px;color:var(--ts-secondary)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M20 7v5h-5M4 17v-5h5M6.2 7a7 7 0 0 1 11.6-1L20 9M4 15l2.2 3A7 7 0 0 0 17.8 17"></path></svg>{{ conn.d.lastSync }}</div>
+          </sc-if>
+        </sc-if>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;justify-content:flex-end;gap:12px;margin:0 28px;padding:18px 0 20px;border-top:1px solid var(--ts-border)">
+        <span style="flex:1;min-width:0;font-size:14px;line-height:1.4;color:var(--ts-secondary);text-wrap:pretty">{{ conn.d.footNote }}</span>
+        <sc-if value="{{ conn.d.builtin }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ conn.d.onUpload }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 20px;border-radius:8px;border:1px solid var(--ts-accent);background:var(--ts-accent);color:var(--ts-on-accent);font-weight:500;cursor:pointer" style-hover="filter: brightness(0.96)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M12 16V4m-5 5 5-5 5 5M5 16v4h14v-4"></path></svg>Upload questionnaire</button>
+        </sc-if>
+        <sc-if value="{{ conn.d.connected }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ conn.d.notBuiltin }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ conn.d.onDisconnect }}" style="flex:none;height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--ts-border-strong);background:transparent;color:var(--ts-red);cursor:pointer;white-space:nowrap" style-hover="background: var(--ts-hover)">{{ conn.d.disconnectLabel }}</button>
+            <button onClick="{{ conn.d.onSync }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 20px;border-radius:8px;border:1px solid var(--ts-accent);background:var(--ts-accent);color:var(--ts-on-accent);font-weight:500;cursor:pointer" style-hover="filter: brightness(0.96)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M20 7v5h-5M4 17v-5h5M6.2 7a7 7 0 0 1 11.6-1L20 9M4 15l2.2 3A7 7 0 0 0 17.8 17"></path></svg>{{ conn.d.syncLabel }}</button>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ conn.d.connecting }}" hint-placeholder-val="{{ false }}">
+          <button disabled="{{ true }}" style="display:inline-flex;align-items:center;gap:12px;height:44px;padding:0 20px;border-radius:8px;border:1px solid var(--ts-border);background:var(--ts-disabled-bg);color:var(--ts-disabled-text);cursor:not-allowed;flex:none;white-space:nowrap">{{ loaderSm }}{{ conn.d.busyLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ conn.d.available }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ conn.d.onConnect }}" style="flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 22px;border-radius:8px;border:1px solid var(--ts-accent);background:var(--ts-accent);color:var(--ts-on-accent);font-weight:500;cursor:pointer" style-hover="filter: brightness(0.96)">{{ conn.d.connectLabel }}<sc-if value="{{ conn.d.external }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg></sc-if></button>
+        </sc-if>
+      </div>
+    </aside>
+  </sc-if>
+  <input ref="{{ fileRef }}" type="file" accept=".csv,text/csv" onChange="{{ onFile }}" style="display:none">
+  <sc-if value="{{ viewer.open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeViewer }}" style="position:fixed;inset:0;z-index:60;background:rgba(8,10,14,0.5)"></div>
+    <aside role="dialog" aria-label="Policy source" style="position:fixed;right:0;top:0;bottom:0;width:640px;max-width:100vw;z-index:61;display:flex;flex-direction:column;background:var(--ts-surface-raised);border-left:1px solid var(--ts-border);box-shadow:var(--ts-panel-shadow)">
+      <div style="flex:none;padding:18px 16px 16px 28px;border-bottom:1px solid var(--ts-border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="min-width:0">
+            <div style="font-family:var(--ts-mono);font-size:14px;color:var(--ts-secondary)">{{ viewer.file }}</div>
+            <h2 style="margin:6px 0 0;font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-0.4px">{{ viewer.title }}</h2>
+          </div>
+          <button onClick="{{ closeViewer }}" aria-label="Close policy" style="flex:none;width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:var(--ts-text);cursor:pointer" style-hover="background: var(--ts-hover)">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m6 6 12 12M6 18 18 6"></path></svg>
+          </button>
+        </div>
+        <sc-if value="{{ viewer.ready }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+            <sc-for list="{{ viewer.chips }}" as="vc" hint-placeholder-count="2">
+              <button onClick="{{ vc.onClick }}" style="height:32px;padding:0 12px;border-radius:8px;border:1px solid {{ vc.border }};background:{{ vc.bg }};color:{{ vc.color }};font-size:14.5px;font-weight:{{ vc.weight }};cursor:pointer;white-space:nowrap">{{ vc.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ viewer.hasDiff }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ viewer.toggleDiff }}" style="margin-top:12px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--ts-border-strong);background:var(--ts-surface);color:var(--ts-text);cursor:pointer" style-hover="background: var(--ts-hover)">{{ viewer.diffLabel }}</button>
+          </sc-if>
+        </sc-if>
+      </div>
+      <div ref="{{ viewerRef }}" style="flex:1;min-height:0;overflow:auto;padding:8px 28px 28px">
+        <sc-if value="{{ viewer.loading }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display:flex;align-items:center;gap:14px;padding:24px 0;color:var(--ts-secondary)">{{ loaderSm }}Loading policy…</div>
+        </sc-if>
+        <sc-for list="{{ viewer.sections }}" as="vs" hint-placeholder-count="3">
+          <div id="{{ vs.domId }}" style="margin-top:16px;padding:16px 18px;border:{{ vs.borderW }} solid {{ vs.border }};border-radius:10px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:17px;font-weight:600">{{ vs.heading }}</span>
+              <sc-if value="{{ vs.changed }}" hint-placeholder-val="{{ false }}"><span style="padding:2px 8px;border-radius:6px;background:var(--ts-amber-soft);color:var(--ts-amber);font-size:14px">{{ vs.changedLabel }}</span></sc-if>
+            </div>
+            <p style="margin:10px 0 0;white-space:pre-line;line-height:1.55;font-size:16px;user-select:text"><sc-for list="{{ vs.segs }}" as="sg" hint-placeholder-count="1"><span style="background:{{ sg.bg }};color:{{ sg.color }};text-decoration:{{ sg.deco }};border-radius:3px">{{ sg.t }}</span></sc-for></p>
+          </div>
+        </sc-for>
+      </div>
+    </aside>
+  </sc-if>
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:fixed;bottom:24px;left:calc(50% + 117px);transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:10px;padding:14px 20px;border:1px solid var(--ts-border);border-radius:12px;background:var(--ts-surface-raised);box-shadow:var(--ts-shadow);white-space:nowrap">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-green);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="m5 12 4 4L19 6"></path></svg>
+      <span>{{ toast }}</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;backend&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;replay&quot;,&quot;live&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;'replay' | 'live'&quot;,&quot;section&quot;:&quot;Backend&quot;},&quot;apiBase&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Backend&quot;}}">
+class Component extends DCLogic {
+  state = {
+    theme: "dark", view: "overview", tab: "results", filter: "all", selectedId: null,
+    meta: null, metaError: null, metaLoading: true, past: [], bench: null, benchMissing: false,
+    policySet: "current", status: "idle", run: null, answers: {}, selecting: {}, lastGood: null, prevRun: null, changes: {},
+    elapsed: 0, error: null, toast: null, exported: false,
+    policyShort: null, policyData: null, policyLoading: false, policyVersion: "current", hlSection: null, hlQuote: null,
+    uploaded: null, feed: [], feedOpen: false, policyDiff: false, policyQuery: "", connFilter: "all", conns: {}, connOpen: null, connDraft: {}, viewer: null, viewerData: null, viewerLoading: false, viewerDiff: false, viewerVersion: "current",
+  };
+  fileRef = React.createRef();
+  viewerRef = React.createRef();
+  feedRef = React.createRef();
+  qn() { return this.state.uploaded || this.state.meta?.questionnaire; }
+  CONN = [
+    { id: "files", group: "sources", name: "Uploaded files", mono: "Up", desc: "Policies and questionnaires uploaded to this workspace.", builtin: true },
+    { id: "confluence", kind: "oauth", url: "https://id.atlassian.com/login", host: "atlassian.com", group: "sources", name: "Confluence", mono: "Cf", desc: "Sync policy pages from selected spaces. Page versions become policy versions.", syncs: ["Pages and child pages in the chosen spaces", "Version history and last-modified dates", "Page owners, shown as policy owners"], fields: [["Site URL", "https://personivo.atlassian.net"], ["Spaces", "SEC, LEGAL"]] },
+    { id: "sharepoint", kind: "oauth", url: "https://login.microsoftonline.com/", host: "microsoftonline.com", group: "sources", name: "SharePoint", mono: "Sp", desc: "Read policy documents from a SharePoint document library.", syncs: ["Word and PDF documents in the library", "Document version numbers", "Approval status, where it is set"], fields: [["Site URL", "https://personivo.sharepoint.com/sites/security"], ["Library", "Policies"]] },
+    { id: "gdrive", kind: "oauth", url: "https://accounts.google.com/", host: "google.com", group: "sources", name: "Google Drive", mono: "Gd", desc: "Watch a shared folder for policy documents.", syncs: ["Docs and PDFs in the folder", "Revision history"], fields: [["Folder link", "https://drive.google.com/drive/folders/…"]] },
+    { id: "salesforce", kind: "oauth", url: "https://login.salesforce.com/", host: "salesforce.com", group: "intake", name: "Salesforce", mono: "Sf", desc: "Pick up security questionnaires attached to opportunities.", syncs: ["CSV and XLSX attachments on opportunities", "Account and opportunity name, due date"], fields: [["Instance URL", "https://personivo.my.salesforce.com"], ["Opportunity stage", "Security review"]] },
+    { id: "hubspot", kind: "oauth", url: "https://app.hubspot.com/login", host: "hubspot.com", group: "intake", name: "HubSpot", mono: "Hs", desc: "Pick up questionnaires attached to deals.", syncs: ["Files attached to deals in the chosen pipeline", "Company name and close date"], fields: [["Portal ID", "24481733"], ["Deal pipeline", "Enterprise"]] },
+    { id: "inbox", group: "intake", name: "Shared inbox", mono: "@", desc: "Forward questionnaires to a workspace address and they appear here.", syncs: ["CSV and XLSX attachments", "Sender and subject as the questionnaire name"], fields: [["Forwarding address", "personivo@in.tenderscale.app"]], fixed: true },
+    { id: "jira", kind: "oauth", url: "https://id.atlassian.com/login", host: "atlassian.com", group: "followup", name: "Jira", mono: "Ji", desc: "Open a ticket for each gap, assigned to the policy owner.", syncs: ["One issue per red question, with the question text", "Issue status shown next to the gap"], fields: [["Site URL", "https://personivo.atlassian.net"], ["Project key", "SEC"]], writes: true },
+    { id: "slack", kind: "oauth", url: "https://slack.com/signin", host: "slack.com", group: "followup", name: "Slack", mono: "Sl", desc: "Post run summaries and new gaps to a channel.", syncs: ["Summary after each completed run", "A message when a new gap appears"], fields: [["Channel", "#security-reviews"]], writes: true },
+    {"id":"nis2","kind":"framework","group":"frameworks","name":"NIS2","mono":"NIS2","desc":"Map your policies to the NIS2 Directive's risk-management measures and reporting duties.","syncs":["Article 21: the ten cybersecurity risk-management measures","Article 23: 24-hour early warning, 72-hour notification, final report within one month","Coverage per measure, linked to the policy sections that meet it"],"fields":[["Entity type","Essential or important entity"],["Sector","Digital infrastructure"]]},
+    {"id":"iso27001","kind":"framework","group":"frameworks","name":"ISO/IEC 27001:2022","mono":"ISO","desc":"Map policies to Annex A controls and prepare for surveillance and recertification audits.","syncs":["All 93 Annex A controls in four themes: organisational, people, physical, technological","A draft Statement of Applicability built from your policies","Evidence list per control for the auditor"],"fields":[["Certification body","e.g. BSI, DNV"],["Next audit","e.g. 15 March 2027"]]},
+    {"id":"soc2","kind":"framework","group":"frameworks","name":"SOC 2","mono":"SOC","desc":"Map policies to the AICPA Trust Services Criteria for a Type I or Type II report.","syncs":["Security, availability, processing integrity, confidentiality and privacy criteria","Policy sections linked to each criterion"],"fields":[["Report type","Type II"],["Audit firm","e.g. your CPA firm"]]},
+    {"id":"okta","kind":"sso","url":"https://login.okta.com/","host":"okta.com","group":"identity","name":"Okta","mono":"Ok","desc":"Single sign-on with SAML 2.0 and user provisioning with SCIM.","syncs":["SAML 2.0 sign-in for everyone in the workspace","SCIM provisioning: people are added and removed from Okta","Group-to-role mapping: Admin, Reviewer, Viewer"],"fields":[["ACS URL","https://tenderscale.app/sso/saml/acs",true],["Entity ID","https://tenderscale.app/saml/personivo",true],["Okta metadata URL","https://personivo.okta.com/app/…/sso/saml/metadata"]]},
+    {"id":"entra","kind":"sso","url":"https://entra.microsoft.com/","host":"entra.microsoft.com","group":"identity","name":"Microsoft Entra ID","mono":"En","desc":"Single sign-on for Microsoft 365 organisations, with SCIM provisioning.","syncs":["SAML 2.0 sign-in with your Microsoft work accounts","SCIM provisioning from Entra ID groups","Group-to-role mapping: Admin, Reviewer, Viewer"],"fields":[["Reply URL (ACS)","https://tenderscale.app/sso/saml/acs",true],["Identifier (Entity ID)","https://tenderscale.app/saml/personivo",true],["Federation metadata URL","https://login.microsoftonline.com/…/federationmetadata.xml"]]},
+    {"id":"gworkspace","kind":"sso","url":"https://admin.google.com/","host":"admin.google.com","group":"identity","name":"Google Workspace","mono":"Gw","desc":"Sign in with Google Workspace accounts through a custom SAML app.","syncs":["SAML 2.0 sign-in with Google accounts","Access limited to the organisational units you choose"],"fields":[["ACS URL","https://tenderscale.app/sso/saml/acs",true],["Entity ID","https://tenderscale.app/saml/personivo",true],["IdP metadata","Paste from Admin console › Apps › Web and mobile apps"]]},
+  ];
+  LOGOS = { okta: "kit/logos/okta.svg", entra: "kit/logos/microsoft.svg", gworkspace: "kit/logos/google.svg", "files":"kit/app-icon-192.png","confluence":"kit/logos/confluence.svg","sharepoint":"kit/logos/microsoftsharepoint.svg","gdrive":"kit/logos/googledrive.svg","notion":"kit/logos/notion.svg","github":"kit/logos/github.svg","salesforce":"kit/logos/salesforce.svg","hubspot":"kit/logos/hubspot.svg","jira":"kit/logos/jira.svg","slack":"kit/logos/slack.svg"};
+  saveConns(conns) { this.setState({ conns }); try { localStorage.setItem("tenderscale.connectors.v1", JSON.stringify(conns)); } catch {} }
+  connect(id) {
+    const def = this.CONN.find((c) => c.id === id), draft = this.state.connDraft[id] || {};
+    if (def.url) window.open(def.url, "_blank", "noopener");
+    const values = Object.fromEntries((def.fields || []).map(([l, ph, ro]) => [l, draft[l] ?? this.state.conns[id]?.values?.[l] ?? (def.fixed || ro ? ph : "")]));
+    this.saveConns({ ...this.state.conns, [id]: { status: "connecting", values, schedule: this.state.conns[id]?.schedule || "Daily" } });
+    setTimeout(() => this.saveConns({ ...this.state.conns, [id]: { ...this.state.conns[id], status: "connected", syncedAt: Date.now() } }), def.url ? 2600 : 1400);
+  }
+  ago(t) { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; }
+  fileName() { const u = this.state.uploaded; return u ? `${u.name.replace(/[^a-z0-9_-]+/gi, "_")}_filled.csv` : "questionnaire_2026_filled.csv"; }
+  flash(msg) { this.setState({ toast: msg }); clearTimeout(this.toastT); this.toastT = setTimeout(() => this.setState({ toast: null }), 4000); }
+  pickFile = () => this.fileRef.current?.click();
+  onFile = (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    f.text().then((text) => {
+      const qn = window.TSBackend.parseQuestionnaire(text, f.name.replace(/\.csv$/i, ""));
+      if (!qn.questions.length) { this.flash(`No questions found in ${f.name}`); return; }
+      this.abort?.abort(); clearInterval(this.timer);
+      this.setState({ ...this.blank(), policySet: this.state.policySet, uploaded: { ...qn, csv: text }, view: "questionnaire", tab: "results", selectedId: null, filter: "all", feed: [] }, () => this.save());
+    });
+  };
+  useDemo = () => { this.abort?.abort(); clearInterval(this.timer); this.setState({ ...this.blank(), policySet: this.state.policySet, uploaded: null, selectedId: null, filter: "all", feed: [] }, () => this.save()); };
+  closeViewer = () => this.setState({ viewer: null });
+  scrollViewer() {
+    setTimeout(() => {
+      const box = this.viewerRef.current, el = document.getElementById("vw-" + this.secDom(this.state.viewer?.sectionId || ""));
+      if (box && el) box.scrollTo({ top: box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top - 24, behavior: "smooth" });
+    }, 80);
+  }
+  closeRef = React.createRef();
+  mainRef = React.createRef();
+  tabsRef = React.createRef();
+  measureTabs = () => {
+    const el = this.tabsRef.current;
+    if (!el) return;
+    const top = Math.round(el.getBoundingClientRect().bottom - 3);
+    if (Math.abs(top - (this.state.panelTopPx || 0)) > 1) this.setState({ panelTopPx: top });
+  };
+  FL = {
+    green: { short: "policy", long: "Answered from policy", color: "var(--ts-green)" },
+    orange: { short: "review", long: "Needs human review", color: "var(--ts-amber)" },
+    red: { short: "no source", long: "No source · not answered", color: "var(--ts-red)" },
+  };
+
+  componentDidMount() {
+    const t = localStorage.getItem("ts-theme") || "dark";
+    document.documentElement.dataset.theme = t;
+    this._prevBackend = this.props.backend; this._prevApi = this.props.apiBase;
+    this.setState({ theme: t, ...this.parseHash() });
+    this.onHash = () => this.setState(this.parseHash());
+    window.addEventListener("hashchange", this.onHash);
+    this.onKey = (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (this.state.selectedId && !this.state.viewer && tag !== "input" && ["ArrowDown", "ArrowUp", "j", "k"].includes(e.key)) { e.preventDefault(); this.step(e.key === "ArrowDown" || e.key === "j" ? 1 : -1); return; }
+      if (e.key !== "Escape") return; if (this.state.connOpen) this.setState({ connOpen: null }); else if (this.state.viewer) this.closeViewer(); else if (this.state.selectedId) this.closePanel(); };
+    document.addEventListener("keydown", this.onKey);
+    window.addEventListener("resize", this.measureTabs);
+    if (window.ResizeObserver) { this.ro = new ResizeObserver(this.measureTabs); this.ro.observe(document.body); }
+    fetch("data/benchmark.json").then((r) => (r.ok ? r.json() : null)).then((b) => this.setState({ bench: b, benchMissing: !b })).catch(() => this.setState({ benchMissing: true }));
+    try { this.setState({ conns: JSON.parse(localStorage.getItem("tenderscale.connectors.v1") || "{}") }); } catch {}
+    this.clock = setInterval(() => { if (this.state.view === "connectors") this.forceUpdate(); }, 30000);
+    const wait = () => (window.TSBackend ? this.init() : setTimeout(wait, 30));
+    wait();
+  }
+  componentWillUnmount() {
+    window.removeEventListener("hashchange", this.onHash);
+    document.removeEventListener("keydown", this.onKey);
+    window.removeEventListener("resize", this.measureTabs);
+    this.ro?.disconnect();
+    clearInterval(this.timer); clearInterval(this.clock); clearTimeout(this.toastT);
+    this.abort?.abort();
+  }
+  componentDidUpdate() {
+    const pb = this._prevBackend, pa = this._prevApi;
+    this._prevBackend = this.props.backend; this._prevApi = this.props.apiBase;
+    if ((pb !== undefined || pa !== undefined) && (pb !== this.props.backend || pa !== this.props.apiBase)) this.init();
+    const st = this.state;
+    if (st.view === "policies" && st.meta && this.backend && !st.policyLoading) {
+      const want = st.policyShort || st.meta.policies?.[0]?.short;
+      if (want && st.policyData?.policy?.short !== want && this._pvReq !== want) { this._pvReq = want; this.openPolicy(want); }
+    }
+    if (st.policyData?.policy?.short === this._pvReq) this._pvReq = null;
+    const prevSel = this._prevSel; this._prevSel = this.state.selectedId;
+    if (this.state.selectedId && this.state.selectedId !== prevSel && this.state.answers[this.state.selectedId]) setTimeout(() => this.closeRef.current?.focus(), 0);
+    const prevFeed = this._prevFeed; this._prevFeed = this.state.feed;
+    const ps = { feed: prevFeed };
+    if (this.state.selectedId) this.measureTabs();
+    if (this.state.feed !== ps.feed && this.feedRef.current) this.feedRef.current.scrollTop = this.feedRef.current.scrollHeight;
+    const h = "#" + this.hashFor(this.state);
+    if (location.hash !== h) history.replaceState(null, "", h);
+  }
+
+  mode() { const u = new URLSearchParams(location.search).get("backend"); return (u || this.props.backend) === "live" ? "live" : "replay"; }
+  base() { const u = new URLSearchParams(location.search).get("apiBase"); return u ?? this.props.apiBase ?? ""; }
+
+  async init() {
+    this.abort?.abort(); clearInterval(this.timer);
+    const B = window.TSBackend;
+    this.backend = this.mode() === "live" ? B.liveBackend(this.base()) : B.localBackend("data/");
+    this.storeKey = "tenderscale.v1." + this.mode();
+    this.setState({ metaLoading: true, metaError: null });
+    try {
+      const [meta, past] = await Promise.all([this.backend.meta(), this.backend.pastAnswers().catch(() => [])]);
+      this.setState({ meta, past, metaLoading: false, ...this.loadSaved() }, () => {
+        if (this.state.view === "policies") this.loadPolicy(this.state.policyShort || meta.policies[0]?.short);
+      });
+    } catch (e) {
+      this.setState({ metaLoading: false, metaError: e?.message || String(e) });
+    }
+  }
+
+  blank() { return { policySet: "current", status: "idle", run: null, answers: {}, selecting: {}, lastGood: null, prevRun: null, changes: {}, elapsed: 0, error: null, exported: false }; }
+  loadSaved() {
+    try {
+      const s = JSON.parse(localStorage.getItem(this.storeKey) || "null");
+      if (!s) return this.blank();
+      return { ...this.blank(), ...s, status: s.status === "running" ? "stopped" : s.status || "idle", selecting: {} };
+    } catch { return this.blank(); }
+  }
+  save() {
+    const lean = (a) => { const { raw_small, raw_large, ...rest } = a; return rest; };
+    const s = this.state;
+    const answers = Object.fromEntries(Object.entries(s.answers).map(([k, v]) => [k, lean(v)]));
+    const lastGood = s.lastGood ? { run: s.lastGood.run, answers: s.lastGood.answers.map(lean) } : null;
+    try { localStorage.setItem(this.storeKey, JSON.stringify({ uploaded: s.uploaded, policySet: s.policySet, status: s.status, run: s.run, answers, lastGood, prevRun: s.prevRun, changes: s.changes, elapsed: s.elapsed, error: s.error, exported: s.exported })); } catch {}
+  }
+
+  parseHash() {
+    const raw = location.hash.slice(1);
+    const [path, qs] = raw.split("?");
+    const p = new URLSearchParams(qs || "");
+    if (path.startsWith("/policies")) return { view: "policies", policyShort: p.get("policy") || this.state.policyShort };
+    if (path.startsWith("/benchmark")) return { view: "benchmark" };
+    if (path.startsWith("/connectors")) return { view: "connectors" };
+    if (path.startsWith("/questionnaires/2025")) return { view: "reference" };
+    if (path.startsWith("/questionnaires/caiq-2026")) return { view: "questionnaire", tab: p.get("view") === "gaps" ? "gaps" : "results", selectedId: p.get("question") };
+    return { view: "overview" };
+  }
+  hashFor(s) {
+    if (s.view === "policies") return "/policies" + (s.policyShort ? "?policy=" + encodeURIComponent(s.policyShort) : "");
+    if (s.view === "benchmark") return "/benchmark";
+    if (s.view === "connectors") return "/connectors";
+    if (s.view === "reference") return "/questionnaires/2025";
+    if (s.view === "questionnaire") {
+      const p = new URLSearchParams();
+      if (s.tab === "gaps") p.set("view", "gaps");
+      if (s.selectedId) p.set("question", s.selectedId);
+      const q = p.toString();
+      return "/questionnaires/caiq-2026" + (q ? "?" + q : "");
+    }
+    return "/questionnaires";
+  }
+
+  start = async () => {
+    if (this.state.status === "running" || !this.backend) return;
+    const prev = this.state.lastGood;
+    const ac = new AbortController(); this.abort = ac;
+    const policy_set = this.state.policySet;
+    this.setState((s) => ({ answers: {}, selecting: {}, changes: {}, run: null, error: null, status: "running", feed: [], feedOpen: true, elapsed: 0, exported: false, toast: null, selectedId: null, filter: s.filter === "changed" ? "all" : s.filter, view: "questionnaire" }));
+    this.t0 = performance.now();
+    clearInterval(this.timer);
+    this.timer = setInterval(() => this.setState({ elapsed: performance.now() - this.t0 }), 50);
+    let finished = false;
+    try {
+      await this.backend.run({ policy_set, signal: ac.signal, questions: this.state.uploaded?.questions, csv: this.state.uploaded?.csv }, (e) => {
+        if (ac.signal.aborted) return;
+        if (e.type === "start" || e.type === "metrics") this.setState({ run: e.run });
+        else if (e.type === "trace") this.setState((s) => ({ feed: (s.feed.length > 400 ? s.feed.slice(-300) : s.feed).concat(e) }));
+        else if (e.type === "selected") this.setState((s) => ({ selecting: { ...s.selecting, [e.question_id]: true } }));
+        else if (e.type === "answer") this.setState((s) => ({ answers: { ...s.answers, [e.answer.question_id]: e.answer } }));
+        else if (e.type === "done") {
+          finished = true;
+          const answers = Object.fromEntries(e.answers.map((a) => [a.question_id, a]));
+          const changes = prev ? Object.fromEntries(window.TSBackend.diffRuns(prev.answers, e.answers).map((c) => [c.question_id, c])) : {};
+          clearInterval(this.timer);
+          this.setState({ run: e.run, answers, status: "done", lastGood: { run: e.run, answers: e.answers }, prevRun: prev ? prev.run : null, changes, elapsed: e.run.duration_ms, feedOpen: false });
+        } else if (e.type === "error") throw new Error(e.message);
+      });
+      if (!finished && !ac.signal.aborted) throw new Error("The run ended before every question was processed.");
+    } catch (err) {
+      if (ac.signal.aborted) this.setState({ status: "stopped" });
+      else this.setState({ status: "error", error: err?.message || String(err) });
+    } finally {
+      clearInterval(this.timer);
+      if (!finished) this.setState({ elapsed: performance.now() - this.t0 });
+      setTimeout(() => this.save(), 0);
+    }
+  };
+  stop = () => this.abort?.abort();
+  loadUpdate = () => this.setState((s) => ({ policySet: "updated", policyVersion: s.policyData?.updated ? "updated" : s.policyVersion }), () => this.save());
+  resetDemo = () => { this.abort?.abort(); clearInterval(this.timer); this.setState({ ...this.blank(), uploaded: null, feed: [], selectedId: null, filter: "all", tab: "results" }, () => this.save()); };
+
+  exportCsv = () => {
+    const { meta, answers } = this.state;
+    const csv = window.TSBackend.toCsv(this.qn(), answers);
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = this.fileName();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    this.setState({ exported: true, toast: `${this.fileName()} downloaded` }, () => this.save());
+    clearTimeout(this.toastT); this.toastT = setTimeout(() => this.setState({ toast: null }), 4000);
+  };
+
+  openQuestion(id) { if (this.state.answers[id]) this.setState({ selectedId: id, view: "questionnaire" }); }
+  closePanel = () => { const id = this.state.selectedId; this.setState({ selectedId: null }, () => document.getElementById("q-" + id)?.focus()); };
+  setFilter(id) { this.setState((s) => ({ filter: s.filter === id && id !== "all" ? "all" : id })); }
+  step(dir) {
+    const list = this.panelList();
+    const i = list.findIndex((q) => q.id === this.state.selectedId);
+    const next = list[i + dir];
+    if (next) this.setState({ selectedId: next.id });
+  }
+  panelList() {
+    const s = this.state, qs = this.qn()?.questions || [], A = s.answers;
+    if (s.tab === "gaps") return qs.filter((q) => A[q.id]?.flag === "red");
+    return this.visible().filter((q) => A[q.id]);
+  }
+  visible() {
+    const s = this.state, qs = this.qn()?.questions || [], A = s.answers;
+    const ff = { policy: "green", review: "orange", "no-source": "red" }[s.filter];
+    return qs.filter((q) => (s.filter === "all" ? true : s.filter === "changed" ? !!s.changes[q.id]?.changed : A[q.id]?.flag === ff));
+  }
+
+  loadPolicy(short, after) {
+    if (!short || !this.backend) return;
+    this.setState({ policyShort: short, policyLoading: true });
+    this.backend.policy(short).then((d) => this.setState({ policyData: d, policyLoading: false }, () => after?.(d))).catch(() => this.setState({ policyLoading: false }));
+  }
+  openPolicy(short) {
+    this.setState({ hlSection: null, hlQuote: null, policyDiff: false, policyQuery: "" });
+    this.loadPolicy(short, (d) => { this.setState({ policyVersion: this.state.policySet === "updated" && d.updated ? "updated" : "current" }); this.scrollTo("pv-top"); });
+  }
+  openCitation(src) {
+    if (!src?.section_id || !this.backend) return;
+    const short = src.section_id.split(" §")[0];
+    this.setState({ viewer: { short, sectionId: src.section_id, quote: src.quote || null, version: src.version }, viewerLoading: true, viewerDiff: false });
+    this.backend.policy(short).then((d) => this.setState({ viewerData: d, viewerLoading: false, viewerVersion: d.updated && src.version === d.updated.policy.version ? "updated" : "current" }, () => this.scrollViewer())).catch(() => this.setState({ viewerLoading: false }));
+  }
+  secDom(id) { return "sec-" + id.replace(/[^a-z0-9]/gi, "-"); }
+  scrollTo(domId) {
+    setTimeout(() => {
+      const main = this.mainRef.current, el = document.getElementById(domId);
+      if (!main) return;
+      if (!el) { main.scrollTo({ top: main.scrollHeight, behavior: "smooth" }); return; }
+      main.scrollTo({ top: main.scrollTop + el.getBoundingClientRect().top - main.getBoundingClientRect().top - 120, behavior: "smooth" });
+    }, 60);
+  }
+
+  loader(size) {
+    const h = React.createElement;
+    const g = (anim, kids) => h("g", { style: { animation: `${anim} 1.6s ease-in-out infinite` } }, kids);
+    return h("svg", { viewBox: "-6 0 52 56", width: Math.round(size * 1.3), height: Math.round(size * 1.4), "aria-hidden": true, style: { display: "inline-block", flex: "none", overflow: "visible" } },
+      g("ts-sway-a", [h("path", { key: 1, d: "M4 16 27 4V15L15 22V32L4 27Z", fill: "#827CF4" }), h("path", { key: 2, d: "M27 4 36 9V21L27 16Z", fill: "#4846F1" })]),
+      g("ts-sway-b", [h("path", { key: 3, d: "M15 40 36 28V40L15 51Z", fill: "#807BF4" }), h("path", { key: 4, d: "M4 35 15 40V51L4 45Z", fill: "#443DF0" })]));
+  }
+
+  fmt(ms) { const t = Math.max(0, Math.floor(ms / 100)); return `${String(Math.floor(t / 600)).padStart(2, "0")}:${String(Math.floor(t / 10) % 60).padStart(2, "0")}.${t % 10}`; }
+  shortModel(m) { return (m || "").split("/").pop().replace(/-Instruct.*$/, ""); }
+  effective(short, version) {
+    const m = this.state.meta; if (!m) return "";
+    const p = [...(m.policies || []), ...(m.updated_policies || [])].find((x) => x.short === short && (!version || x.version === version));
+    return p?.effective || "";
+  }
+  segs(text, other) {
+    const RX = /\b(every (?:\d+ )?(?:days?|weeks?|months?|quarters?|years?|minutes?|hours?)|\d+ (?:business days|days?|minutes?|hours?|months?|years?)|daily|weekly|monthly|quarterly|annually|yearly)\b/gi;
+    const o = (other || "").toLowerCase(), out = []; let last = 0;
+    for (const m of (text || "").matchAll(RX)) {
+      if (o.includes(m[0].toLowerCase())) continue;
+      if (m.index > last) out.push([text.slice(last, m.index), false]);
+      out.push([m[0], true]); last = m.index + m[0].length;
+    }
+    if (last < (text || "").length) out.push([text.slice(last), false]);
+    return out.map(([t, hl]) => ({ t, color: hl ? "var(--ts-amber)" : "inherit", weight: hl ? 600 : 400 }));
+  }
+
+  renderVals() {
+    const s = this.state, meta = s.meta;
+    const qs = this.qn()?.questions || [];
+    const total = qs.length || 50;
+    const A = s.answers || {};
+    const counts = { green: 0, orange: 0, red: 0 };
+    for (const a of Object.values(A)) if (counts[a.flag] !== undefined) counts[a.flag]++;
+    const doneN = Object.keys(A).length;
+    const hasPrev = Object.keys(s.changes || {}).length > 0;
+    const changedN = Object.values(s.changes || {}).filter((c) => c.changed).length;
+    const running = s.status === "running";
+    const ready = !s.metaLoading && !s.metaError && !!meta;
+    const panelOpen = !!(ready && s.view === "questionnaire" && s.selectedId && A[s.selectedId]);
+    const upd = meta?.updated_policies?.[0];
+    const pendingUpdate = !!(s.run && s.policySet === "updated" && s.run.policy_set !== "updated");
+    const FL = this.FL;
+
+    const rows = this.visible().map((q) => {
+      const a = A[q.id], f = a ? FL[a.flag] : null, sel = !!s.selecting[q.id], selected = panelOpen && s.selectedId === q.id;
+      return {
+        domId: "q-" + q.id, id: q.id, text: q.text,
+        bar: f ? f.color : "var(--ts-border-strong)", labelColor: f ? f.color : "var(--ts-secondary)", flagLabel: f ? f.short : "pending",
+        hasAnswer: !!a, answer: a?.answer || "", answerColor: a?.answer === "Unknown" ? "var(--ts-secondary)" : "var(--ts-text)", answerSize: a?.answer === "Unknown" ? "15px" : "16px",
+        writing: !a && running && sel, noAnswer: !a, placeholder: !a && running ? (sel ? "writing…" : "selecting…") : "—",
+        comment: a ? (a.flag === "red" ? "No source found in your policies" : a.comment) : "",
+        commentColor: a && a.flag !== "red" ? "var(--ts-text)" : "var(--ts-secondary)",
+        source: a ? (a.sources[0] ? `${a.sources[0].section_id} v${a.sources[0].version}${a.sources.length > 1 ? ` +${a.sources.length - 1}` : ""}` : "no source") : "—",
+        changed: !!s.changes[q.id]?.changed, selected,
+        bg: selected ? "var(--ts-selected)" : "transparent", disabled: !a, cursor: a ? "pointer" : "default",
+        opacity: !a && running ? (sel ? 0.85 : 0.5) : 1,
+        onClick: () => this.openQuestion(q.id),
+        sourceLink: !!a?.sources?.[0], sourceColor: a?.sources?.[0] ? "var(--ts-text)" : "var(--ts-secondary)",
+        onSource: (e) => { if (a?.sources?.[0]) { e.stopPropagation(); this.openCitation(a.sources[0]); } },
+      };
+    });
+
+    const chipDefs = [["all", `All ${total}`], ["policy", `Green ${counts.green}`], ["review", `Amber ${counts.orange}`], ["no-source", `Red ${counts.red}`]];
+    if (hasPrev) chipDefs.push(["changed", `Changed ${changedN}`]);
+    const chips = chipDefs.map(([id, label]) => {
+      const on = s.filter === id;
+      return { label, active: on, bg: on ? "var(--ts-accent-soft)" : "transparent", color: on ? "var(--ts-accent)" : "var(--ts-text)", border: on ? "transparent" : "var(--ts-border)", weight: on ? 600 : 400, onClick: () => this.setFilter(id) };
+    });
+
+    let panel = { open: false };
+    if (panelOpen) {
+      const a = A[s.selectedId], q = qs.find((x) => x.id === s.selectedId), f = FL[a.flag];
+      const list = this.panelList(), idx = list.findIndex((x) => x.id === a.question_id);
+      const isConflict = a.flag === "orange" && a.conflicts?.length > 0;
+      const outdated = !!(a.past_answer && a.past_answer_consistent === false && a.flag !== "red");
+      const reason = a.flag === "red" ? "" : isConflict ? "Two current policies specify different answers." : a.flag === "orange" && outdated && !a.checks?.numbers_unverified?.length ? "Last year's answer is outdated." : a.flag === "orange" ? a.flag_reason : "Quote verified against the policy text.";
+      const cite = (src) => {
+        const short = src.section_id.split(" §")[0], eff = this.effective(short, src.version);
+        return { label: [src.section_id, src.version ? "v" + src.version : null, eff ? "effective " + eff : null].filter(Boolean).join(" · "), quote: `“${src.quote}”`, onOpen: () => this.openCitation(src) };
+      };
+      const c0 = isConflict ? a.conflicts[0] : null;
+      const ch = s.changes[a.question_id];
+      const prevSrc = ch?.previous?.sources?.[0], curSrc = a.sources[0];
+      const prevDisabled = idx <= 0, nextDisabled = idx < 0 ? list.length === 0 : idx >= list.length - 1;
+      panel = {
+        open: true, id: a.question_id, question: q?.text || a.question_id,
+        hasComment: a.flag !== "red" && !!a.comment, comment: a.comment, hasWhy: a.flag !== "red" && !!a.reasoning, why: a.reasoning,
+        answer: a.answer, answerColor: a.answer === "Unknown" ? "var(--ts-secondary)" : "var(--ts-text)",
+        flagColor: f.color, flagLabel: f.long, hasReason: !!reason, reason,
+        isRed: a.flag === "red", redReason: a.flag_reason,
+        hasSources: !isConflict && a.sources.length > 0, sources: isConflict ? [] : a.sources.map(cite),
+        isConflict, whatDiffers: c0?.what_differs || "",
+        conflictCards: c0 ? [c0.section_a, c0.section_b].map((id) => { const src = a.sources.find((x) => x.section_id === id); return src ? cite(src) : { label: id, quote: "Paragraph not returned by this run.", onOpen: () => this.openCitation({ section_id: id }) }; }) : [],
+        hasCompare: outdated && !!curSrc,
+        oldHeader: outdated ? `2025 answer · ${a.past_answer.ref}${a.past_answer.answer !== a.answer ? ` · ${a.past_answer.answer}` : ""}` : "",
+        oldSegs: outdated ? this.segs(a.past_answer.comment, curSrc?.quote) : [],
+        newSegs: outdated && curSrc ? this.segs(curSrc.quote, a.past_answer.comment) : [],
+        changed: !!ch?.changed, changeReasons: ch?.reasons?.join(" · ") || "",
+        prevHeader: `Previous run${prevSrc ? ` · ${prevSrc.section_id} v${prevSrc.version}` : ""}`, prevAnswer: ch?.previous?.answer || "",
+        prevSegs: ch?.changed ? this.segs(ch.previous.comment, a.comment) : [],
+        curHeader: `This run${curSrc ? ` · ${curSrc.section_id} v${curSrc.version}` : ""}`,
+        curSegs: ch?.changed ? this.segs(a.comment, ch.previous.comment) : [],
+        prevDisabled, nextDisabled,
+        prevColor: prevDisabled ? "var(--ts-disabled-text)" : "var(--ts-text)", nextColor: nextDisabled ? "var(--ts-disabled-text)" : "var(--ts-text)",
+        prevCursor: prevDisabled ? "not-allowed" : "pointer", nextCursor: nextDisabled ? "not-allowed" : "pointer",
+      };
+    }
+
+    const cur = s.status === "done" ? (s.exported ? 4 : 3) : 2;
+    const steps = ["Load", "Run", "Review", "Export"].map((label, i) => {
+      const n = i + 1, done = n < cur, on = n === cur;
+      return { n, label, sep: i > 0, isDone: done, notDone: !done, aria: on ? "step" : undefined, color: on ? "var(--ts-text)" : "var(--ts-secondary)", weight: on ? 600 : 400, ring: on ? "var(--ts-accent)" : done ? "var(--ts-neutral)" : "var(--ts-border-strong)", bg: on ? "var(--ts-accent)" : done ? "var(--ts-neutral)" : "transparent", numColor: on ? "var(--ts-on-accent)" : done ? "var(--ts-accent)" : "var(--ts-text)" };
+    });
+
+    const isGaps = s.tab === "gaps";
+    const tabs = {
+      results: !isGaps, gaps: isGaps,
+      resultsLine: !isGaps ? "var(--ts-accent)" : "transparent", resultsColor: !isGaps ? "var(--ts-accent)" : "var(--ts-text)", resultsWeight: !isGaps ? 600 : 400,
+      gapsLine: isGaps ? "var(--ts-accent)" : "transparent", gapsColor: isGaps ? "var(--ts-accent)" : "var(--ts-text)", gapsWeight: isGaps ? 600 : 400,
+    };
+
+    const ms = s.status === "done" && s.run ? s.run.duration_ms : s.elapsed;
+    const tok = s.run ? s.run.input_tokens + s.run.output_tokens : 0;
+    const m = {
+      time: this.fmt(ms), processed: `${doneN} / ${total}`, done: doneN, pct: `${((100 * doneN) / total).toFixed(1)}%`,
+      cost: tok > 0 ? `$${s.run.cost_usd.toFixed(2)}` : "—",
+      tokens: tok > 0 ? (tok >= 1000 ? `${Math.round(tok / 1000)}k` : String(tok)) : "—",
+    };
+
+    const act = {
+      runPrimary: s.status === "idle", runPrimaryLabel: `Run ${total} questions`,
+      exportEnabled: s.status === "done", exportDisabled: s.status !== "done" && s.status !== "idle",
+      exportBg: pendingUpdate ? "var(--ts-surface)" : "var(--ts-accent)", exportColor: pendingUpdate ? "var(--ts-text)" : "var(--ts-on-accent)", exportBorder: pendingUpdate ? "var(--ts-border-strong)" : "var(--ts-accent)",
+      running,
+      showLoadUpdate: s.status === "done" && !!upd && s.policySet === "current", loadUpdateLabel: upd ? `Load updated policy (v${upd.version})` : "",
+      updateLoaded: ["done", "stopped", "error"].includes(s.status) && s.policySet === "updated", updateLoadedLabel: upd ? `Policy v${upd.version} loaded` : "Update loaded",
+      rerunOutline: s.status === "done" && !pendingUpdate,
+      rerunPrimary: s.status === "stopped" || s.status === "error" || (s.status === "done" && pendingUpdate),
+      rerunPrimaryLabel: s.status === "error" ? "Retry run" : "Run again",
+    };
+
+    const verDiff = () => {
+      const a = s.prevRun?.policy_versions || {}, b = s.run?.policy_versions || {};
+      const d = Object.keys(b).filter((k) => a[k] && a[k] !== b[k]).map((k) => `${k} v${a[k]} → v${b[k]}`);
+      return d.length ? d.join(", ") : "same policy versions";
+    };
+    const banner = {
+      idle: s.status === "idle",
+      idleText: `Loaded: ${meta?.policies?.length || 3} policies${s.policySet === "updated" && upd ? ` (${upd.short} v${upd.version})` : ""} · 2025 reference (${s.past.length} answers) · ${s.uploaded ? s.uploaded.name : "2026 CAIQ"} (${total} questions)`,
+      updated: pendingUpdate && !running, updatedText: upd ? `${upd.short} updated to v${upd.version}. Run again to see what changed.` : "",
+      changed: s.status === "done" && hasPrev && !pendingUpdate,
+      changedText: `Compared with the previous run (${verDiff()}): ${changedN} question${changedN === 1 ? "" : "s"} changed.`,
+      showChangedBtn: changedN > 0 && s.filter !== "changed",
+      stopped: s.status === "stopped", error: s.status === "error",
+    };
+
+    const reds = qs.filter((q) => A[q.id]?.flag === "red");
+    const gaps = {
+      hasRows: reds.length > 0,
+      title: doneN === 0 ? "Run the questionnaire to find gaps" : `${reds.length} question${reds.length === 1 ? "" : "s"} without a policy source`,
+      sub: doneN === 0 ? "Gaps are questions that no current policy covers." : "These questions were not answered. They are the policy gaps to resolve.",
+      rows: reds.map((q) => ({ id: q.id, text: q.text, reason: A[q.id].flag_reason, bg: panelOpen && s.selectedId === q.id ? "var(--ts-selected)" : "transparent", onView: () => this.openQuestion(q.id) })),
+    };
+
+    const lastRun = s.lastGood?.run;
+    const ov = running ? { badge: "Running", badgeBg: "var(--ts-accent-soft)", badgeColor: "var(--ts-accent)", hasCounts: false }
+      : lastRun ? { badge: lastRun.flags.orange + lastRun.flags.red > 0 ? "Needs review" : "Ready to export", badgeBg: "var(--ts-amber-soft)", badgeColor: "var(--ts-amber)", hasCounts: true, lastAgo: `Last run ${this.ago(Date.parse(lastRun.finished_at || lastRun.started_at))}`, lastDur: `· ${(lastRun.duration_ms / 1000).toFixed(1)} s`, green: lastRun.flags.green, orange: lastRun.flags.orange, red: lastRun.flags.red }
+      : { badge: "Ready to run", badgeBg: "var(--ts-neutral)", badgeColor: "var(--ts-secondary)", hasCounts: false };
+
+    const qA = ["overview", "questionnaire", "reference"].includes(s.view), pA = s.view === "policies", bA = s.view === "benchmark", cA = s.view === "connectors";
+    const navv = (on) => ({ bg: on ? "var(--ts-accent-soft)" : "transparent", color: on ? "var(--ts-accent)" : "var(--ts-text)", weight: on ? 500 : 400, cur: on ? "page" : undefined });
+    const nq = navv(qA), np = navv(pA), nb = navv(bA), nc = navv(cA);
+    const nav = { cBg: nc.bg, cColor: nc.color, cWeight: nc.weight, cCurrent: nc.cur, qBg: nq.bg, qColor: nq.color, qWeight: nq.weight, qCurrent: nq.cur, pBg: np.bg, pColor: np.color, pWeight: np.weight, pCurrent: np.cur, bBg: nb.bg, bColor: nb.color, bWeight: nb.weight, bCurrent: nb.cur };
+
+    let back = false, items;
+    if (s.view === "questionnaire") { back = true; items = [s.uploaded ? s.uploaded.name : "2026 CAIQ", ...(isGaps ? ["Gaps"] : []), ...(panelOpen ? [s.selectedId] : [])]; }
+    else if (s.view === "reference") { back = true; items = ["2025 questionnaire"]; }
+    else if (s.view === "policies") items = ["Workspace", "Policies", ...(s.policyData && s.policyShort ? [s.policyShort] : [])];
+    else if (s.view === "benchmark") items = ["Workspace", "Benchmark"];
+    else if (s.view === "connectors") items = ["Workspace", "Connectors", ...(s.connOpen ? [this.CONN.find((c) => c.id === s.connOpen)?.name || ""] : [])];
+    else items = ["Workspace", "Questionnaires"];
+    const crumb = { back, items: items.map((label, i) => ({ label, sep: back || i > 0, color: i === items.length - 1 ? "var(--ts-text)" : "var(--ts-secondary)" })) };
+
+    const pol = {
+      canLoad: !!upd && s.policySet === "current", loadLabel: upd ? `Load updated policy (v${upd.version})` : "",
+      loaded: !!upd && s.policySet === "updated", loadedLabel: upd ? `${upd.short} v${upd.version} loaded` : "",
+      rows: (meta?.policies || []).map((p) => {
+        const u = (meta.updated_policies || []).find((x) => x.short === p.short), use = s.policySet === "updated" && u ? u : p;
+        return { name: p.name, short: p.short, version: use.version ? `v${use.version}` : "Not provided", hasNote: !!u, note: u ? (s.policySet === "updated" ? (s.run?.policy_set === "updated" ? `v${u.version} in use` : `v${u.version} adopted · run to apply`) : `v${u.version} available`) : "", effective: use.effective || "Not provided", sections: p.sections, bg: s.policyShort === p.short && s.policyData ? "var(--ts-selected)" : "transparent", bar: s.policyShort === p.short && s.policyData ? "var(--ts-accent)" : "transparent", nameColor: s.policyShort === p.short && s.policyData ? "var(--ts-accent)" : "var(--ts-text)", onOpen: () => this.openPolicy(p.short) };
+      }),
+    };
+    let pv = { show: false, loading: s.policyLoading, toc: [], sections: [] };
+    const d = s.policyData;
+    if (d && s.view === "policies" && !s.policyLoading) {
+      const showUpd = s.policyVersion === "updated" && !!d.updated;
+      const P = showUpd ? d.updated.policy : d.policy, secs = showUpd ? d.updated.sections : d.sections;
+      const strip = (t) => t.replace(/^\s*[*-]\s+/gm, "• ");
+      const changedIds = d.updated ? d.updated.sections.filter((u) => d.sections.find((c) => c.id === u.id)?.hash !== u.hash).map((u) => u.id) : [];
+      const diffOn = !!(s.policyDiff && d.updated);
+      const q = (s.policyQuery || "").trim().toLowerCase();
+      const matches = (sec) => !q || (sec.title + " " + sec.text).toLowerCase().includes(q);
+      const tg = (label, on, v, amber) => ({ label, active: on, bg: on ? (amber ? "var(--ts-amber-soft)" : "var(--ts-accent-soft)") : "transparent", color: amber ? "var(--ts-amber)" : on ? "var(--ts-accent)" : "var(--ts-text)", border: on ? "transparent" : amber ? "var(--ts-amber)" : "var(--ts-border)", weight: on ? 600 : 400, onClick: () => this.setState({ policyVersion: v }) });
+      const seg = (t, kind) => ({ t, bg: kind === "hl" ? "var(--ts-amber-soft)" : kind === "add" ? "var(--ts-green-soft)" : kind === "del" ? "var(--ts-red-soft)" : "transparent", color: kind === "add" ? "var(--ts-green)" : kind === "del" ? "var(--ts-red)" : "inherit", deco: kind === "del" ? "line-through" : "none" });
+      const mk = (sec) => {
+        const text = strip(sec.text), changed = changedIds.includes(sec.id);
+        let segs;
+        if (diffOn && changed) {
+          segs = window.TSBackend.wordDiff(strip(d.sections.find((c) => c.id === sec.id)?.text || ""), strip(d.updated.sections.find((u) => u.id === sec.id)?.text || "")).map((o) => seg(o.w, o.t === "same" ? "" : o.t));
+        } else if (q) {
+          segs = []; const low = text.toLowerCase(); let k = 0, at;
+          while ((at = low.indexOf(q, k)) >= 0) { if (at > k) segs.push(seg(text.slice(k, at), "")); segs.push(seg(text.slice(at, at + q.length), "hl")); k = at + q.length; }
+          if (k < text.length) segs.push(seg(text.slice(k), ""));
+        } else {
+          const hq = s.hlSection === sec.id && s.hlQuote ? s.hlQuote : null, at = hq ? text.indexOf(hq) : -1;
+          segs = at >= 0 ? [seg(text.slice(0, at), ""), seg(hq, "hl"), seg(text.slice(at + hq.length), "")] : [seg(text, "")];
+        }
+        return { domId: this.secDom(sec.id), heading: `§${sec.number} ${sec.title}`, sid: sec.id, border: s.hlSection === sec.id ? "var(--ts-accent)" : "var(--ts-border)", changed: !!d.updated && changed, changedLabel: showUpd ? `changed in v${P.version}` : `changes in v${d.updated?.policy.version}`, segs };
+      };
+      const compare = diffOn && !q;
+      const list = secs.filter((sec) => matches(sec) && (!compare || changedIds.includes(sec.id)));
+      const isUpd = !!(upd && d.updated && upd.short === d.policy.short);
+      const adoptedSet = s.policySet === "updated" && isUpd, ranWithUpd = adoptedSet && s.run?.policy_set === "updated" && s.status !== "running";
+      const inUseVer = adoptedSet ? d.updated.policy.version : d.policy.version;
+      const cur = d.policy.version, nv = d.updated?.policy.version;
+      const changedNames = changedIds.map((id) => { const x = d.updated.sections.find((u) => u.id === id); return `§${x.number} ${x.title}`; });
+      const citing = Object.values(s.answers || {}).filter((a) => (a.sources || []).some((x) => changedIds.includes(x.section_id) && x.version === cur)).length;
+      const nChangedAnswers = Object.values(s.changes || {}).filter((c) => c.changed).length;
+      const setMode = (m) => this.setState({ policyVersion: m === "current" ? "current" : "updated", policyDiff: m === "compare", policyQuery: m === "compare" ? "" : s.policyQuery });
+      const modeNow = diffOn ? "compare" : showUpd ? "updated" : "current";
+      const mode = (id, label, dot) => { const on = modeNow === id; return { label, active: on, dot: !!dot, bg: on ? "var(--ts-surface-raised)" : "transparent", color: on ? "var(--ts-text)" : "var(--ts-secondary)", weight: on ? 600 : 400, shadow: on ? "0 1px 2px #00000026, 0 0 0 1px var(--ts-border)" : "none", onClick: () => setMode(id) }; };
+      const up = !isUpd ? { show: false } : !adoptedSet ? {
+        show: true, pending: true, adopted: false, inUse: false, bg: "var(--ts-amber-soft)", border: "transparent", iconColor: "var(--ts-amber)",
+        title: `Version ${nv} is ready to adopt`,
+        text: `Effective ${d.updated.policy.effective}. ${changedNames.length} section${changedNames.length === 1 ? "" : "s"} changed: ${changedNames.join(", ")}.${citing ? ` ${citing} answer${citing === 1 ? "" : "s"} in the last run cite${citing === 1 ? "s" : ""} it.` : ""}`,
+        hasSecondary: !diffOn, secondary: "Review changes", onSecondary: () => { setMode("compare"); this.scrollTo("pv-top"); },
+        primary: `Adopt v${nv}`, onPrimary: this.loadUpdate,
+      } : !ranWithUpd ? {
+        show: true, pending: false, adopted: true, inUse: false, bg: "var(--ts-accent-soft)", border: "transparent", iconColor: "var(--ts-accent)",
+        title: `v${nv} adopted. Run the questionnaire to apply it.`,
+        text: citing ? `${citing} answer${citing === 1 ? "" : "s"} cite the changed section. The run compares every answer with the last one.` : "The run compares every answer with the last one.",
+        hasSecondary: s.status !== "running", secondary: "Undo", onSecondary: () => this.setState({ policySet: "current", policyVersion: "current", policyDiff: false }, () => this.save()),
+        primary: s.status === "running" ? "View run" : "Run again", onPrimary: () => this.setState({ view: "questionnaire", tab: "results", selectedId: null }, () => { if (this.state.status !== "running") this.start(); }),
+      } : {
+        show: true, pending: false, adopted: false, inUse: true, bg: "var(--ts-green-soft)", border: "transparent", iconColor: "var(--ts-green)",
+        title: `v${nv} is in use`,
+        text: `The last run used v${nv}. ${nChangedAnswers} answer${nChangedAnswers === 1 ? "" : "s"} changed compared with v${cur}.`,
+        hasSecondary: false, primary: "See changed answers", onPrimary: () => this.setState({ view: "questionnaire", tab: "results", filter: "changed", selectedId: null }),
+      };
+      pv = {
+        show: true, loading: false, title: P.name, meta: `${P.short} · v${P.version} · effective ${P.effective || "Not provided"}${diffOn ? ` · compared with v${cur}` : P.version === inUseVer ? " · in use" : " · not adopted"}`, up,
+        modes: d.updated ? [mode("current", `v${cur}`), mode("compare", "Changes", true), mode("updated", `v${nv}`)] : [],
+        hasToggle: !!d.updated, toggles: d.updated ? [tg(`v${d.policy.version} · current`, !showUpd, "current"), tg(`v${d.updated.policy.version} · update`, showUpd, "updated", true)] : [],
+        hasDiff: !!d.updated, diffOn, diffLabel: diffOn ? "Hide changes" : `Show what changed in v${d.updated?.policy.version || ""}`,
+        toggleDiff: () => this.setState((st) => ({ policyDiff: !st.policyDiff, policyVersion: st.policyDiff ? st.policyVersion : "updated" })),
+        query: s.policyQuery || "", onQuery: (e) => this.setState({ policyQuery: e.target.value }), clearQuery: () => this.setState({ policyQuery: "" }), hasQuery: !!q,
+        resultNote: q ? `${list.length} of ${secs.length} sections match` : compare ? `Showing ${list.length} changed section${list.length === 1 ? "" : "s"} of ${secs.length}` : `${secs.length} sections${changedIds.length ? ` · ${changedIds.length} changed in v${nv}` : ""}`,
+        noMatch: !!q && !list.length,
+        toc: secs.map((sec) => ({ label: `§${sec.number} ${sec.title}`, changed: !!d.updated && changedIds.includes(sec.id), color: matches(sec) ? "var(--ts-text)" : "var(--ts-secondary)", bg: s.hlSection === sec.id ? "var(--ts-selected)" : "transparent", onClick: () => { this.setState({ hlSection: sec.id, hlQuote: null, policyQuery: matches(sec) ? s.policyQuery : "" }); this.scrollTo(this.secDom(sec.id)); } })),
+        sections: list.map(mk),
+      };
+    }
+    const b = s.bench, openR = b?.results?.find((r) => r.engine === "nebius"), closedR = b?.results?.find((r) => r.engine !== "nebius");
+    const fw = (f) => ({ green: "policy", orange: "review", red: "no source" }[f] || f);
+    const defs = [
+      ["Answers correct (of 50)", (r) => `${r.answersCorrect}`], ["Flags correct (of 50)", (r) => `${r.flagsCorrect}`], ["Invented numbers", (r) => `${r.invented}`],
+      ["Key facts covered (judge, of 50)", (r) => `${r.factsCovered}`], ["Traps caught (of 8)", (r) => `${r.trapsCaught}`], ["Last year's answer matched (of 30)", (r) => `${r.pastMatched}`],
+      ["Accuracy (avg score)", (r) => r.avgScore.toFixed(2)], ["Seconds per questionnaire", (r) => r.seconds.toFixed(1)], ["Cost per questionnaire", (r) => `$${r.usd.toFixed(3)} (€${r.eur.toFixed(3)})`],
+      ["Tokens in / out", (r) => `${r.run.input_tokens.toLocaleString("en")} / ${r.run.output_tokens.toLocaleString("en")}`], ["Data leaves EU", (r) => (r.dataLeavesEU ? "Yes" : "No")],
+    ];
+    const bench = {
+      ready: !!openR, missing: s.benchMissing,
+      openModels: openR ? `${this.shortModel(openR.model_small)} → ${this.shortModel(openR.model_large)}` : "",
+      closedModels: closedR ? `${this.shortModel(closedR.model_small)} → ${this.shortModel(closedR.model_large)}` : "Not measured",
+      rows: openR ? defs.map(([label, f]) => ({ label, open: f(openR), closed: closedR ? f(closedR) : "" })) : [],
+      traps: openR ? openR.scored.filter((x) => x.trap).map((t) => ({ id: t.id, trap: t.trap.split(":")[0].toLowerCase().replace(/^\w/, (c) => c.toUpperCase()), detail: t.trap.split(":").slice(1).join(":").trim(), expected: `${t.expected} · ${fw(t.expectedFlag)}`, result: `${t.answer} · ${fw(t.flag)}`, mark: t.score === 1 ? "correct" : t.score === 0.5 ? "partly" : "wrong", color: t.score === 1 ? "var(--ts-green)" : t.score === 0.5 ? "var(--ts-amber)" : "var(--ts-red)" })) : [],
+      generated: b?.generatedAt ? new Date(b.generatedAt).toLocaleString("en-GB") : "", judge: (b?.judge || "").split("/").pop(),
+    };
+
+    const stepColor = { shortlist: "var(--ts-secondary)", select: "var(--ts-accent)", write: "var(--ts-text)", verify: "var(--ts-green)" };
+    const flagColorOf = (d) => (/^RED/.test(d) ? "var(--ts-red)" : /^ORANGE/.test(d) ? "var(--ts-amber)" : "var(--ts-green)");
+    const feed = {
+      has: s.feed.length > 0, open: s.feedOpen, count: `${s.feed.length} line${s.feed.length === 1 ? "" : "s"}`,
+      chevron: s.feedOpen ? "rotate(90deg)" : "rotate(0deg)",
+      toggle: () => this.setState((st) => ({ feedOpen: !st.feedOpen })),
+      lines: s.feed.slice(-300).map((f) => ({ t: (f.t / 1000).toFixed(1).padStart(5, " ") + "s", id: f.question_id, step: f.step, color: f.step === "flag" ? flagColorOf(f.detail) : stepColor[f.step] || "var(--ts-text)", model: f.model ? this.shortModel(f.model) : "code", detail: f.detail, ms: `${Math.round(f.ms)} ms` })),
+    };
+    let viewer = { open: !!s.viewer, loading: !!s.viewer && s.viewerLoading, ready: false };
+    const vd = s.viewerData, V = s.viewer;
+    if (V && vd && !s.viewerLoading && vd.policy.short === V.short) {
+      const showUpd = s.viewerVersion === "updated" && !!vd.updated;
+      const P = showUpd ? vd.updated.policy : vd.policy, secs = showUpd ? vd.updated.sections : vd.sections;
+      const strip = (t) => t.replace(/^\s*[*-]\s+/gm, "• ");
+      const changedIds = vd.updated ? vd.updated.sections.filter((u) => vd.sections.find((c) => c.id === u.id)?.hash !== u.hash).map((u) => u.id) : [];
+      const diffOn = !!(s.viewerDiff && vd.updated);
+      const chip = (label, on, amber, v) => ({ label, bg: on ? (amber ? "var(--ts-amber-soft)" : "var(--ts-accent-soft)") : "transparent", color: amber ? "var(--ts-amber)" : on ? "var(--ts-accent)" : "var(--ts-text)", border: on ? "transparent" : amber ? "var(--ts-amber)" : "var(--ts-border)", weight: on ? 600 : 400, onClick: () => this.setState({ viewerVersion: v }, () => this.scrollViewer()) });
+      viewer = {
+        open: true, loading: false, ready: true,
+        file: P.file || `${P.id}${showUpd ? `_v${P.version}` : ""}.md`, title: P.name,
+        chips: [chip(`v${vd.policy.version} · effective ${vd.policy.effective}`, !showUpd, false, "current"), ...(vd.updated ? [chip(`v${vd.updated.policy.version} · effective ${vd.updated.policy.effective} · ${changedIds.length} section${changedIds.length === 1 ? "" : "s"} changed`, showUpd, true, "updated")] : [])],
+        hasDiff: !!vd.updated, diffLabel: diffOn ? "Hide changes" : `Show what changed in v${vd.updated?.policy.version || ""}`,
+        toggleDiff: () => this.setState((st) => ({ viewerDiff: !st.viewerDiff })),
+        sections: secs.map((sec) => {
+          const cited = sec.id === V.sectionId, text = strip(sec.text), changed = changedIds.includes(sec.id);
+          let segs;
+          if (diffOn && changed) {
+            const a = strip(vd.sections.find((c) => c.id === sec.id)?.text || ""), b = strip(vd.updated.sections.find((u) => u.id === sec.id)?.text || "");
+            segs = window.TSBackend.wordDiff(a, b).map((o) => ({ t: o.w, bg: o.t === "add" ? "var(--ts-green-soft)" : o.t === "del" ? "var(--ts-red-soft)" : "transparent", color: o.t === "add" ? "var(--ts-green)" : o.t === "del" ? "var(--ts-red)" : "inherit", deco: o.t === "del" ? "line-through" : "none" }));
+          } else {
+            const q = cited && V.quote ? V.quote : null, i = q ? text.indexOf(q) : -1;
+            const parts = i >= 0 ? [[text.slice(0, i), 0], [q, 1], [text.slice(i + q.length), 0]] : [[text, 0]];
+            segs = parts.map(([t, hl]) => ({ t, bg: hl ? "var(--ts-amber-soft)" : "transparent", color: hl ? "var(--ts-text)" : "inherit", deco: "none" }));
+          }
+          return { domId: "vw-" + this.secDom(sec.id), heading: `${sec.id} · ${sec.title}`, cited, border: cited ? "var(--ts-accent)" : "var(--ts-border)", borderW: cited ? "2px" : "1px", changed: changed && !!vd.updated, changedLabel: `changed in v${vd.updated?.policy.version}`, segs };
+        }),
+      };
+    }
+    const GROUPS = [["sources", "Policy sources", "Where your policies live. Every sync creates a new policy version, so runs stay traceable."], ["intake", "Questionnaire intake", "Where questionnaires arrive. New files show up in Questionnaires, ready to run."], ["followup", "Gap follow-up", "Where gaps go so a policy owner can close them."], ["frameworks", "Compliance frameworks", "Map policies and answers to the standards you are audited against."], ["identity", "Sign-in and SSO", "Let your team sign in with your identity provider."]];
+    const cstate = (c) => (c.builtin ? { status: "connected", syncedAt: null } : s.conns[c.id] || { status: "available" });
+    const badge = (st, c) => st === "connected" ? { label: c?.kind === "framework" ? "Enabled" : c?.kind === "sso" ? "Active" : "Connected", bg: "var(--ts-green-soft)", color: "var(--ts-green)" } : st === "connecting" ? { label: c?.kind === "framework" ? "Mapping…" : "Connecting…", bg: "var(--ts-accent-soft)", color: "var(--ts-accent)" } : { label: c?.kind === "framework" ? "Not enabled" : c?.kind === "sso" ? "Not set up" : "Not connected", bg: "var(--ts-neutral)", color: "var(--ts-secondary)" };
+    const cmeta = (c, cs) => c.builtin ? `${meta?.policies?.length || 3} policies · ${s.uploaded ? 3 : 2} questionnaires` : cs.status === "connected" ? (c.kind === "framework" ? "Enabled · mapped on the next run" : c.kind === "sso" ? "Active · SAML 2.0" : `Synced ${this.ago(cs.syncedAt)} · ${cs.schedule || "Daily"}`) : cs.status === "connecting" ? (c.kind === "framework" ? "Mapping controls…" : `Waiting for ${c.host || "your identity provider"}…`) : c.kind === "framework" ? "Uses your workspace policies" : c.kind === "sso" ? "SAML 2.0 · SCIM" : c.writes ? "Writes only where you choose" : "Read-only";
+    const connectedN = this.CONN.filter((c) => cstate(c).status === "connected").length;
+    const conn = {
+      summary: `${connectedN} connected · ${this.CONN.length - connectedN} available`,
+      filters: [["all", "All"], ["connected", "Connected"], ["available", "Available"]].map(([id, label]) => { const on = s.connFilter === id; return { label, active: on, bg: on ? "var(--ts-accent-soft)" : "transparent", color: on ? "var(--ts-accent)" : "var(--ts-text)", weight: on ? 600 : 400, onClick: () => this.setState({ connFilter: id }) }; }),
+      groups: GROUPS.map(([g, title, sub]) => ({ title, sub, items: this.CONN.filter((c) => c.group === g && (s.connFilter === "all" || (s.connFilter === "connected") === (cstate(c).status === "connected"))).map((c) => { const cs = cstate(c), bd = badge(cs.status, c); return { name: c.name, mono: c.mono, monoSize: c.mono.length > 2 ? "13px" : "20px", logo: this.LOGOS[c.id] || "", logoBg: this.LOGOS[c.id] ? `url("${this.LOGOS[c.id]}") center/contain no-repeat` : "none", hasLogo: !!this.LOGOS[c.id], noLogo: !this.LOGOS[c.id], desc: c.desc, meta: cmeta(c, cs), badge: bd.label, badgeBg: bd.bg, badgeColor: bd.color, ring: s.connOpen === c.id ? "var(--ts-accent)" : "var(--ts-border)", busy: cs.status === "connecting", onOpen: () => this.setState({ connOpen: c.id }) }; }) })),
+      open: false,
+    };
+    conn.groups = conn.groups.filter((g) => g.items.length);
+    const oc = s.connOpen && this.CONN.find((c) => c.id === s.connOpen);
+    if (oc) {
+      const cs = cstate(oc), bd = badge(cs.status, oc), draft = s.connDraft[oc.id] || {};
+      const connected = cs.status === "connected", connecting = cs.status === "connecting";
+      conn.open = true;
+      conn.d = {
+        name: oc.name, mono: oc.mono, monoSize: oc.mono.length > 2 ? "14px" : "22px", logo: this.LOGOS[oc.id] || "", logoBg: this.LOGOS[oc.id] ? `url("${this.LOGOS[oc.id]}") center/contain no-repeat` : "none", hasLogo: !!this.LOGOS[oc.id], noLogo: !this.LOGOS[oc.id], desc: oc.desc, badge: bd.label, badgeBg: bd.bg, badgeColor: bd.color,
+        builtin: !!oc.builtin, notBuiltin: !oc.builtin,
+        docs: oc.builtin ? [...(meta?.policies || []).map((p) => ({ name: p.name, meta: `v${p.version} · ${p.sections} sections` })), { name: "2026 CAIQ questionnaire", meta: `${meta?.questionnaire?.questions?.length || 50} questions` }, { name: "2025 questionnaire", meta: `${s.past.length} answers` }, ...(s.uploaded ? [{ name: s.uploaded.name, meta: `${s.uploaded.questions.length} questions · uploaded` }] : [])] : [],
+        syncs: (oc.syncs || []).map((t) => ({ t })),
+        syncTitle: oc.kind === "framework" ? "What it maps" : oc.kind === "sso" ? "What it sets up" : "What it syncs",
+        external: !!oc.url, footNote: oc.url && cs.status !== "connected" ? `Opens ${oc.host} in a new tab.` : "",
+        busyLabel: oc.kind === "framework" ? "Mapping controls…" : `Waiting for ${oc.host || "approval"}…`,
+        syncLabel: oc.kind === "framework" ? "Map now" : oc.kind === "sso" ? "Test sign-in" : "Sync now", disconnectLabel: oc.kind === "framework" ? "Disable" : oc.kind === "sso" ? "Turn off SSO" : "Disconnect",
+        access: oc.kind === "framework" ? "Uses only the policies and answers in this workspace. Nothing is sent to a third party." : oc.kind === "sso" ? "Sign-in only. TenderScale receives name, email and group membership." : oc.writes ? "Creates items only in the project or channel you choose. Nothing else is read." : "Read-only. TenderScale never edits or deletes anything in " + oc.name + ".",
+        fields: (oc.fields || []).map(([label, ph, ro]) => ({ label, placeholder: ph, value: draft[label] ?? cs.values?.[label] ?? (oc.fixed || ro ? ph : ""), readOnly: !!(oc.fixed || ro), inputBg: oc.fixed || ro ? "var(--ts-neutral)" : "var(--ts-canvas)", font: ro ? "var(--ts-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" : "inherit", size: ro ? "14px" : "16px",
+          copyLabel: this.state.copied === label ? "Copied" : "Copy", onCopy: () => { try { navigator.clipboard?.writeText(ph); } catch (e) {} this.setState({ copied: label }); clearTimeout(this._cpT); this._cpT = setTimeout(() => this.setState({ copied: null }), 1400); }, onChange: (e) => { const v = e.target.value; this.setState((st) => ({ connDraft: { ...st.connDraft, [oc.id]: { ...(st.connDraft[oc.id] || {}), [label]: v } } })); } })),
+        hasSchedule: !oc.writes && !oc.fixed && !oc.kind?.match(/sso|framework/),
+        schedule: ["Hourly", "Daily", "On change"].map((v) => { const on = (cs.schedule || "Daily") === v; return { label: v, bg: on ? "var(--ts-accent-soft)" : "transparent", color: on ? "var(--ts-accent)" : "var(--ts-text)", border: on ? "transparent" : "var(--ts-border)", weight: on ? 600 : 400, onClick: () => this.saveConns({ ...s.conns, [oc.id]: { ...(s.conns[oc.id] || { status: "available" }), schedule: v } }) }; }),
+        connected, connecting, available: !connected && !connecting,
+        lastSync: connected && cs.syncedAt ? `${oc.kind === "framework" ? "Enabled" : oc.kind === "sso" ? "Last tested" : "Last synced"} ${this.ago(cs.syncedAt)}` : "",
+        connectLabel: oc.kind === "framework" ? "Enable framework" : oc.url ? `Continue to ${({ "atlassian.com": "Atlassian", "microsoftonline.com": "Microsoft", "entra.microsoft.com": "Microsoft", "google.com": "Google", "admin.google.com": "Google", "salesforce.com": "Salesforce", "hubspot.com": "HubSpot", "slack.com": "Slack", "okta.com": "Okta" })[oc.host] || oc.name}` : "Save",
+        onConnect: () => this.connect(oc.id),
+        onSync: () => this.saveConns({ ...s.conns, [oc.id]: { ...cs, syncedAt: Date.now() } }),
+        onDisconnect: () => { const n = { ...s.conns }; delete n[oc.id]; this.saveConns(n); },
+        onUpload: this.pickFile,
+      };
+    }
+    const mm = meta?.models;
+    return {
+      company: meta?.company || "Personivo B.V.", companyInitial: (meta?.company || "P").charAt(0),
+      isDark: s.theme === "dark", isLight: s.theme !== "dark", themeLabel: s.theme === "dark" ? "Light theme" : "Dark theme",
+      nav, crumb,
+      metaLoading: s.metaLoading, metaError: !!s.metaError,
+      metaErrorText: s.metaError ? s.metaError + (/fetch|network/i.test(s.metaError) ? " — the server is down or blocks this origin (CORS). See INTEGRATION.md." : "") : "",
+      apiBaseLabel: this.base() || "this origin",
+      loaderLg: this.loader(40), loaderSm: this.loader(16), loaderXs: this.loader(12),
+      show: { overview: ready && s.view === "overview", questionnaire: ready && s.view === "questionnaire", reference: ready && s.view === "reference", policies: ready && s.view === "policies", connectors: ready && s.view === "connectors", benchmark: ready && s.view === "benchmark" },
+      totalQuestions: total, policyCount: meta?.policies?.length || 3, pastCount: s.past.length || meta?.past_answers || 30, ov, canReset: !!(s.run || s.policySet === "updated"),
+      m, act, tabs, steps, counts, banner, bannerMax: panelOpen ? "calc(100% - 600px)" : "none", errorText: s.error || "",
+      showMainChips: !panelOpen && doneN > 0, chips, rows, noRows: rows.length === 0 && qs.length > 0,
+      gaps, panel, toast: s.toast,
+      modelLine: mm ? `selection: ${this.shortModel(mm.selection)} · writing: ${this.shortModel(mm.writing)} · embedding: ${this.shortModel(mm.embedding)} · ${mm.provider} · EU · no closed model in the pipeline` : "",
+      engineLine: this.mode() === "live" ? `Live API · ${this.base() || "same origin"}` : "In-browser engine · Personivo demo set",
+      pastRows: s.past.map((p) => ({ ...p })), pol, pv, bench,
+      feed, viewer, feedRef: this.feedRef, viewerRef: this.viewerRef, fileRef: this.fileRef,
+      qnTitle: s.uploaded ? s.uploaded.name : "2026 CAIQ questionnaire",
+      ovSub: s.uploaded ? `Uploaded questionnaire · ${total} questions` : "Current questionnaire · CAIQ v4.1",
+      up: { is: !!s.uploaded, replayNote: !!s.uploaded && this.mode() === "replay" },
+      pickFile: this.pickFile, onFile: this.onFile, useDemo: this.useDemo, closeViewer: this.closeViewer,
+      mainRef: this.mainRef, closeRef: this.closeRef, tabsRef: this.tabsRef,
+      panelTop: `${Math.max(s.panelTopPx || 244, 120)}px`,
+      goOverview: () => this.setState({ view: "overview", selectedId: null }),
+      goPolicies: () => { this.setState({ view: "policies", selectedId: null }); if (!s.policyData && meta) this.openPolicy(s.policyShort || meta.policies[0].short); },
+      goBenchmark: () => this.setState({ view: "benchmark", selectedId: null }),
+      goConnectors: () => this.setState({ view: "connectors", selectedId: null }),
+      conn, closeConn: () => this.setState({ connOpen: null }),
+      openQuestionnaire: () => this.setState({ view: "questionnaire" }),
+      openReference: () => this.setState({ view: "reference", selectedId: null }),
+      toggleTheme: () => { const t = s.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; localStorage.setItem("ts-theme", t); this.setState({ theme: t }); },
+      showResults: () => this.setState({ tab: "results" }),
+      showGaps: () => this.setState((st) => ({ tab: "gaps", selectedId: st.answers[st.selectedId]?.flag === "red" ? st.selectedId : null })),
+      filterChanged: () => this.setState({ filter: "changed" }),
+      start: this.start, stop: this.stop, loadUpdate: this.loadUpdate, exportCsv: this.exportCsv, resetDemo: this.resetDemo,
+      closePanel: this.closePanel, prevQuestion: () => this.step(-1), nextQuestion: () => this.step(1),
+      retryInit: () => this.init(),
+    };
+  }
+}
+</script>
+</body>
+</html>

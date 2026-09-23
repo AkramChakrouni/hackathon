@@ -22,7 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             TenderScale
           </Link>
           <nav className="flex gap-5 text-mute">
-            <Link href="/" className="hover:text-fg">Workspace</Link>
+            <Link href="/" className="hover:text-fg">App</Link><Link href="/reference" className="hover:text-fg">Reference UI</Link>
             <Link href="/benchmark" className="hover:text-fg">Benchmark</Link>
           </nav>
         </header>

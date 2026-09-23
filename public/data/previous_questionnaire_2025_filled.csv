@@ -1,0 +1,31 @@
+ref,question,answer,comment
+VQ-01,Is your organisation audited by an independent external party at least once a year?,Yes,ISO/IEC 27001:2022 certified since May 2024; annual surveillance audit by an accredited certification body.
+VQ-02,Do you follow a secure software development lifecycle?,Yes,"Secure SDLC based on OWASP ASVS Level 2, with peer review on every change."
+VQ-03,How are vulnerabilities in your application remediated?,Yes,"Remediation deadlines: critical within 7 days, high within 30 days, medium within 90 days."
+VQ-04,Do you have a documented business continuity policy?,Yes,Business continuity policy approved by management and reviewed annually.
+VQ-05,Is your business continuity plan tested at least once a year?,Yes,Annual tabletop exercise.
+VQ-06,How often are backups of customer data made?,Yes,"Full database backups are made weekly, retained for 30 days and stored in Azure West Europe."
+VQ-07,Do you periodically test the restoration of backups?,Yes,A restore test is performed annually.
+VQ-08,Is customer data replicated to a geographically separate location?,No,All data is hosted in Azure West Europe across availability zones. Geo-replication is planned.
+VQ-09,Do you have a formal change management process?,Yes,All changes go through pull requests with peer review and an automated deployment pipeline.
+VQ-10,Is customer data encrypted at rest and in transit?,Yes,"AES-256 at rest, TLS 1.2 or higher in transit."
+VQ-11,Which encryption algorithms do you use?,Yes,AES-256 and TLS 1.2/1.3 with industry standard cipher suites. No custom cryptography.
+VQ-12,Can customers bring or manage their own encryption keys?,No,Keys are managed by Personivo in Azure Key Vault.
+VQ-13,How is physical security of your data centres ensured?,Yes,Outsourced to Microsoft Azure. Microsoft's ISO 27001 and SOC 2 reports are reviewed annually.
+VQ-14,Do you classify data by sensitivity?,Yes,"Four levels: Public, Internal, Confidential, Strictly Confidential."
+VQ-15,Have you performed a DPIA for the processing of our employees' personal data?,Yes,A DPIA for the core platform was completed in 2024.
+VQ-16,Can data subjects exercise their GDPR rights?,Yes,"Requests are forwarded to the customer within 2 business days. Customer admins have tools to export, correct and delete data."
+VQ-17,Where is our data stored?,Yes,Primary data is stored in Azure West Europe (Netherlands). No data is stored outside the EEA.
+VQ-18,Do you have an information security programme?,Yes,"ISO 27001 certified ISMS, owned by the CTO in the role of Information Security Officer."
+VQ-19,Are background checks performed for new employees?,Yes,A VOG (Certificate of Conduct) is required for all employees and contractors.
+VQ-20,Do employees sign confidentiality agreements?,Yes,Confidentiality obligations are part of every employment contract.
+VQ-21,Do employees receive security awareness training?,Yes,"At onboarding and annually, plus quarterly phishing simulations."
+VQ-22,Is access granted based on least privilege?,Yes,Role based access control; production access only just in time.
+VQ-23,How quickly is access revoked when an employee leaves?,Yes,"Within 24 hours, and immediately for involuntary terminations."
+VQ-24,Is multi-factor authentication enforced?,Yes,MFA is mandatory for all workforce accounts. Customer users can enable MFA and customer admins can enforce it.
+VQ-25,Describe your password policy.,Yes,"Minimum 14 characters, checked against breached passwords, no forced rotation in line with NIST SP 800-63B."
+VQ-26,Is network traffic between your internal services encrypted?,Yes,TLS is used for all internal and external traffic.
+VQ-27,How long are security logs retained?,Yes,"12 months, in immutable storage."
+VQ-28,Do you have an incident response plan that includes customer communication?,Yes,Customers are notified within 24 hours of a confirmed breach through their security contacts.
+VQ-29,How often do you scan for vulnerabilities?,Yes,Continuous infrastructure scanning with Defender for Cloud; dependencies are checked daily.
+VQ-30,Do you perform independent penetration tests?,Yes,Annual penetration test by an independent CREST accredited firm.
