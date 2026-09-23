@@ -124,4 +124,42 @@ Score rule (team's sheet): 1 = answer, key facts and flag all match; 0.5 = answe
 Before going on stage: one warm-up run five minutes earlier; never two runs at once (they share one rate limit).
 `;
 fs.writeFileSync(path.join("docs", "pitch-pack.md"), out);
-console.log("wrote docs/pitch-pack.md and", fs.readdirSync(path.join("docs", "charts")).length, "charts");
+
+const submission = `# Submission — TenderScale · Accel AI Innovate Amsterdam, 23 Sep 2026
+
+Live product: https://hackathon-ten-zeta-43.vercel.app · Numbers: https://hackathon-ten-zeta-43.vercel.app/benchmark · Repo: https://github.com/AkramChakrouni/hackathon (MODELS.md, benchmark/benchmark.md, benchmark/answer_key_filled.xlsx, docs/pitch-pack.md)
+
+## What did you build, and what problem does it solve?
+
+Every software vendor that sells to a bank, insurer or enterprise gets a security questionnaire before the deal closes: 50 to 200 questions, often the CSA CAIQ. The security lead or sales engineer spends 20 to 40 hours per questionnaire finding the right paragraph in the policies, copying last year's answers, and hoping nothing changed. A wrong answer is a contractual statement to a bank. Today this is spreadsheets and Ctrl+F, or a $50k+/year RFP tool that still leaves the checking to a human and cannot tell you which of last year's answers are now wrong.
+
+TenderScale answers a questionnaire from the company's own policies and nothing else. For every question it returns Yes / No / Unknown, a two-sentence comment, the reason, and the exact policy section and version with a verbatim quote that the code verifies against the source. Click the quote and the policy opens with the sentence highlighted, with a word-by-word view of what changed between versions. Two policies that disagree are flagged with both values side by side. A practice that changed since last year's answer is flagged. A question no policy covers is refused, not invented. Rerun after a policy update and it shows exactly which answers changed and why.
+
+Our customer is Personivo B.V., a 25-person HR SaaS in Utrecht selling to banks: three policies, last year's questionnaire, and a fresh 50-question CAIQ v4.1 with a held-out answer key. Result: ${r.answersCorrect} of 50 answers correct, ${r.flagsCorrect} of 50 flags correct, ${r.invented} invented numbers, 100% of quotes verified, in ${r.seconds.toFixed(0)} seconds for $${r.usd.toFixed(3)}, against 20–40 hours and roughly €${fmt(humanCost(HUMAN_H.low))}–€${fmt(humanCost(HUMAN_H.high))} of a security lead's time.
+
+Questionnaire software already has budget owners; the wedge is the mid-market vendor for whom a slow questionnaire is a lost deal and a wrong one is a liability. €500–2,000 per month per team pays back on one contract; at cents per questionnaire the margin supports usage pricing. Expansion: RFPs, due-diligence questionnaires, and the buyer's side of the same table.
+
+## Models and Token Factory use
+
+Everything in the pipeline runs on Nebius Token Factory (OpenAI-compatible API, EU). No closed model anywhere in the product.
+
+- Qwen/Qwen3-30B-A3B-Instruct-2507 — source selection (small tier). Reads the shortlisted policy sections for a question and returns the sections that contain the answer, the coverage (covered / partial / none) and a category. Measured 1.1 s median at 50 concurrent calls; the 235B as selector degraded to 13 s under the same load, gemma-3-27b had a tail of minutes.
+- Qwen/Qwen3-235B-A22B-Instruct-2507 — answer writing (large tier). Yes / No / Unknown, comment, reasoning, verbatim quotes, conflicts between sections, and whether last year's answer is still consistent. Non-reasoning MoE, 22B active: no hidden thinking tokens, predictable latency; scored best in a blind quality matrix against gpt-oss-120b and DeepSeek-V4-Flash.
+- Qwen/Qwen3-Embedding-8B — cosine shortlist of sections and past answers so each selection call stays at ~1.5K tokens.
+- Around the models, in code: quote check (every quote must appear in the cited section), number check (every number in the comment must be backed by a quote), Yes without a source becomes Unknown, and deterministic red / orange / green flags.
+- Closed models: used only as the benchmark baseline through Vercel AI Gateway when a key is available; ${closed ? "measured on the day, see /benchmark" : "on the day the closed column was not run, so the cost comparison is at list price for the identical token volume"}.
+
+## Measurable model advantage
+
+Baseline 1: the human, 20–40 hours per questionnaire (Loopio's RFP benchmark reports ~30 hours per response). Baseline 2: the same pipeline on a closed model at list price for the measured token volume (${fmt(tok.input_tokens)} in / ${fmt(tok.output_tokens)} out).
+
+Scored against a held-out answer key the pipeline never sees (Personivo CAIQ v4.1, 50 questions, 8 deliberate traps): answers correct ${r.answersCorrect}/50, flags correct ${r.flagsCorrect}/50, invented numbers ${r.invented}, key facts covered (judge) ${r.factsCovered}/50, last year's answer matched ${r.pastMatched}/30, traps caught ${r.trapsCaught}/8 at full score, average score ${r.avgScore.toFixed(2)}. Wall-clock ${r.seconds.toFixed(1)} s. Cost $${r.usd.toFixed(3)} (€${r.eur.toFixed(3)}) versus $${cost(GPT5).toFixed(2)} on GPT-5 at list price, ${fmt(cost(GPT5) / r.usd)}× cheaper, and the policies never leave the EU.
+
+Model selection was measured, not assumed: selector latency under load (30B 1.1 s vs 235B 13 s vs gemma minutes) and a blind-judged writer matrix (Qwen3-235B 4.21/5 vs gpt-oss-120b 2.57 vs DeepSeek-V4-Flash 2.87, 3× slower). Details: MODELS.md, benchmark/benchmark.md, the filled score sheet, docs/pitch-pack.md and /benchmark.
+
+## Responsible design
+
+Every answer cites a verbatim quote and the code verifies it against the section; no answer without a source, so red questions are never answered; last year's answers never override the current policy; the answer key is never in the pipeline path; inference on Nebius in the EU with no closed model in the pipeline; the export carries the flags so a human sees what needs review before anything is sent.
+`;
+fs.writeFileSync(path.join("docs", "submission.md"), submission);
+console.log("wrote docs/pitch-pack.md, docs/submission.md and", fs.readdirSync(path.join("docs", "charts")).length, "charts");

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T10:35:35.349Z",
+  "generatedAt": "2026-09-23T10:39:37.232Z",
   "judge": "deepseek-ai/DeepSeek-V4-Pro-0813",
   "results": [
     {
@@ -7,7 +7,7 @@
       "model_small": "Qwen/Qwen3-30B-A3B-Instruct-2507",
       "model_large": "Qwen/Qwen3-235B-A22B-Instruct-2507",
       "run": {
-        "run_id": "87621f0f-9f4d-40f8-92a6-21ff9d4a6fa6",
+        "run_id": "0a27d30a-aaa7-4a2a-ac3a-3f90798af2be",
         "policy_set": "current",
         "policy_versions": {
           "InfoSec": "4.0",
@@ -16,21 +16,21 @@
         },
         "model_small": "Qwen/Qwen3-30B-A3B-Instruct-2507",
         "model_large": "Qwen/Qwen3-235B-A22B-Instruct-2507",
-        "started_at": "2026-09-23T10:34:44.054Z",
-        "duration_ms": 15990,
-        "input_tokens": 122184,
-        "output_tokens": 13764,
-        "cost_usd": 0.02523572,
-        "baseline_cost_usd": 0.29037,
+        "started_at": "2026-09-23T10:38:49.748Z",
+        "duration_ms": 15545,
+        "input_tokens": 125193,
+        "output_tokens": 13489,
+        "cost_usd": 0.02538032,
+        "baseline_cost_usd": 0.29138125000000004,
         "done": 50,
         "total": 50,
         "flags": {
-          "green": 44,
-          "orange": 3,
+          "green": 43,
+          "orange": 4,
           "red": 3
         },
         "status": "done",
-        "finished_at": "2026-09-23T10:35:00.044Z"
+        "finished_at": "2026-09-23T10:39:05.293Z"
       },
       "scored": [
         {
@@ -68,15 +68,15 @@
           "trap": "",
           "expected": "Yes",
           "expectedFlag": "green",
-          "answer": "Unknown",
-          "flag": "red",
-          "answerOk": false,
-          "flagOk": false,
+          "answer": "Yes",
+          "flag": "green",
+          "answerOk": true,
+          "flagOk": true,
           "invented": [],
-          "factsCovered": false,
+          "factsCovered": true,
           "pastOk": null,
-          "score": 0,
-          "note": "The selected sections do not answer this question"
+          "score": 1,
+          "note": "Answered from the current policy with verified quotes"
         },
         {
           "id": "AIS-07.1",
@@ -118,9 +118,9 @@
           "answerOk": true,
           "flagOk": true,
           "invented": [],
-          "factsCovered": false,
+          "factsCovered": true,
           "pastOk": true,
-          "score": 0.5,
+          "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
         {
@@ -144,14 +144,14 @@
           "expected": "Yes",
           "expectedFlag": "orange",
           "answer": "Yes",
-          "flag": "orange",
+          "flag": "green",
           "answerOk": true,
-          "flagOk": true,
+          "flagOk": false,
           "invented": [],
           "factsCovered": true,
-          "pastOk": true,
-          "score": 1,
-          "note": "Practice changed since the 2025 answer (VQ-06)"
+          "pastOk": false,
+          "score": 0.5,
+          "note": "Answered from the current policy with verified quotes"
         },
         {
           "id": "BCR-08.2",
@@ -159,14 +159,14 @@
           "expected": "Yes",
           "expectedFlag": "green",
           "answer": "Yes",
-          "flag": "green",
+          "flag": "orange",
           "answerOk": true,
-          "flagOk": true,
+          "flagOk": false,
           "invented": [],
           "factsCovered": true,
           "pastOk": null,
-          "score": 1,
-          "note": "Answered from the current policy with verified quotes"
+          "score": 0.5,
+          "note": "Practice changed since the 2025 answer (VQ-07)"
         },
         {
           "id": "BCR-08.3",
@@ -208,9 +208,9 @@
           "answerOk": true,
           "flagOk": true,
           "invented": [],
-          "factsCovered": false,
+          "factsCovered": true,
           "pastOk": true,
-          "score": 0.5,
+          "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
         {
@@ -254,7 +254,7 @@
           "flagOk": true,
           "invented": [],
           "factsCovered": true,
-          "pastOk": false,
+          "pastOk": true,
           "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
@@ -359,7 +359,7 @@
           "flagOk": true,
           "invented": [],
           "factsCovered": true,
-          "pastOk": false,
+          "pastOk": true,
           "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
@@ -398,15 +398,15 @@
           "trap": "",
           "expected": "Yes",
           "expectedFlag": "green",
-          "answer": "Yes",
-          "flag": "green",
-          "answerOk": true,
-          "flagOk": true,
+          "answer": "Unknown",
+          "flag": "red",
+          "answerOk": false,
+          "flagOk": false,
           "invented": [],
-          "factsCovered": true,
+          "factsCovered": false,
           "pastOk": null,
-          "score": 1,
-          "note": "Answered from the current policy with verified quotes"
+          "score": 0,
+          "note": "No policy section covers this topic"
         },
         {
           "id": "DSP-16.1",
@@ -449,7 +449,7 @@
           "flagOk": true,
           "invented": [],
           "factsCovered": true,
-          "pastOk": true,
+          "pastOk": false,
           "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
@@ -463,9 +463,9 @@
           "answerOk": true,
           "flagOk": true,
           "invented": [],
-          "factsCovered": false,
+          "factsCovered": true,
           "pastOk": true,
-          "score": 0.5,
+          "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
         {
@@ -629,7 +629,7 @@
           "flagOk": true,
           "invented": [],
           "factsCovered": false,
-          "pastOk": true,
+          "pastOk": false,
           "score": 0.5,
           "note": "Answered from the current policy with verified quotes"
         },
@@ -644,7 +644,7 @@
           "flagOk": true,
           "invented": [],
           "factsCovered": false,
-          "pastOk": true,
+          "pastOk": false,
           "score": 0.5,
           "note": "Answered from the current policy with verified quotes"
         },
@@ -669,14 +669,14 @@
           "expected": "Yes",
           "expectedFlag": "orange",
           "answer": "Yes",
-          "flag": "green",
+          "flag": "orange",
           "answerOk": true,
-          "flagOk": false,
+          "flagOk": true,
           "invented": [],
-          "factsCovered": false,
+          "factsCovered": true,
           "pastOk": null,
-          "score": 0.5,
-          "note": "Answered from the current policy with verified quotes"
+          "score": 1,
+          "note": "Policies disagree: InfoSec §12 vs DataProt §9"
         },
         {
           "id": "LOG-02.1",
@@ -689,7 +689,7 @@
           "flagOk": true,
           "invented": [],
           "factsCovered": true,
-          "pastOk": false,
+          "pastOk": true,
           "score": 1,
           "note": "Answered from the current policy with verified quotes"
         },
@@ -785,15 +785,15 @@
         }
       ],
       "answersCorrect": 49,
-      "flagsCorrect": 47,
+      "flagsCorrect": 46,
       "invented": 0,
-      "factsCovered": 39,
+      "factsCovered": 43,
       "trapsCaught": 4,
-      "pastMatched": 24,
-      "avgScore": 0.87,
-      "seconds": 15.99,
-      "usd": 0.02523572,
-      "eur": 0.0232168624,
+      "pastMatched": 23,
+      "avgScore": 0.89,
+      "seconds": 15.545,
+      "usd": 0.02538032,
+      "eur": 0.0233498944,
       "dataLeavesEU": false
     }
   ]

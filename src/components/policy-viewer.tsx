@@ -22,12 +22,13 @@ export function PolicyViewer({ short, sectionId, quote, onClose }: { short: stri
   const [data, setData] = useState<Pol | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const target = useRef<HTMLElement | null>(null);
+  const pane = useRef<HTMLElement | null>(null);
   useEffect(() => { let live = true; fetch(`/api/policy?short=${encodeURIComponent(short)}`).then((r) => r.json()).then((d) => live && setData(d)); return () => { live = false; }; }, [short]);
-  useEffect(() => { if (data) setTimeout(() => target.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 50); }, [data, showDiff]);
+  useEffect(() => { if (data) setTimeout(() => { if (pane.current && target.current) pane.current.scrollTo({ top: Math.max(0, target.current.offsetTop - 120), behavior: "smooth" }); }, 80); }, [data, showDiff]);
   const changed = new Set(data?.updated ? data.updated.sections.filter((u) => data.sections.find((c) => c.id === u.id)?.hash !== u.hash).map((u) => u.id) : []);
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-ink/60 backdrop-blur-[2px]" onClick={onClose}>
-      <aside className="rise h-full w-[640px] overflow-auto border-l border-line bg-ink px-8 py-6 text-[15px]" onClick={(e) => e.stopPropagation()}>
+      <aside ref={(el) => { pane.current = el; }} className="rise relative h-full w-[640px] overflow-auto border-l border-line bg-ink px-8 py-6 text-[15px]" onClick={(e) => e.stopPropagation()}>
         {!data ? <div className="text-mute">Loading policy…</div> : (
           <>
             <div className="flex items-start justify-between gap-4">
