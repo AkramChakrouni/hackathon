@@ -22,11 +22,22 @@ a{color:var(--ts-accent)} a:hover{color:var(--ts-text)}
 button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--ts-accent);outline-offset:3px}
 @keyframes ts-sway-a{0%,100%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
 @keyframes ts-sway-b{0%,100%{transform:translateX(1.5px)}50%{transform:translateX(-1.5px)}}
+@keyframes ts-slide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:0s!important}}
 </style>
 </helmet>
 
 <div style="min-height:100vh;min-width:1200px;background:var(--ts-canvas);color:var(--ts-text);font-family:var(--ts-font);font-size:16px;line-height:1.4">
+  <sc-if value="{{ isUploading }}" hint-placeholder-val="{{ false }}">
+    <div role="status" aria-live="polite" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--ts-canvas) 82%, transparent);backdrop-filter:blur(6px)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:40px 56px;border-radius:16px;background:var(--ts-surface);border:1px solid var(--ts-border);box-shadow:var(--ts-panel-shadow);min-width:420px">
+        <svg viewBox="0 0 40 56" width="44" height="62" aria-hidden="true"><g style="animation:ts-sway-a 1.1s ease-in-out infinite"><path d="M4 16 27 4V15L15 22V32L4 27Z" fill="#827CF4"></path><path d="M4 35 15 40V51L4 45Z" fill="#443DF0"></path></g><g style="animation:ts-sway-b 1.1s ease-in-out infinite"><path d="M27 4 36 9V21L27 16Z" fill="#4846F1"></path><path d="M15 40 36 28V40L15 51Z" fill="#807BF4"></path></g></svg>
+        <div style="font-size:20px;font-weight:600">Reading {{ uploadingName }}</div>
+        <div style="color:var(--ts-secondary)">{{ uploadingCount }} questions found · matching columns · checking policies</div>
+        <div style="width:100%;height:4px;border-radius:2px;background:var(--ts-neutral);overflow:hidden"><div style="height:100%;width:40%;border-radius:2px;background:var(--ts-accent);animation:ts-slide 1.1s ease-in-out infinite"></div></div>
+      </div>
+    </div>
+  </sc-if>
 
   <aside style="position:fixed;left:0;top:0;bottom:0;width:235px;background:var(--ts-sidebar);border-right:1px solid var(--ts-border);display:flex;flex-direction:column;padding:18px 7px 22px;z-index:30">
     <div style="display:flex;align-items:center;gap:14px;padding:0 20px;height:36px">
@@ -129,6 +140,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
               <div style="display:flex;align-items:center;gap:12px;font-weight:600">
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="flex:none;color:var(--ts-secondary);fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M9 8h6M9 12h6M9 16h3"></path></svg>
                 <span>{{ qnTitle }}</span>
+                <sc-if value="{{ up.isNew }}" hint-placeholder-val="{{ false }}"><span aria-label="New" style="display:inline-flex;align-items:center;gap:7px;margin-left:6px;padding:3px 10px 3px 8px;border-radius:999px;background:var(--ts-accent-soft);color:var(--ts-accent);font-size:13px;font-weight:600;letter-spacing:.02em"><span style="width:8px;height:8px;border-radius:50%;background:var(--ts-accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--ts-accent) 30%, transparent)"></span>New</span></sc-if>
               </div>
               <div style="margin:8px 0 0 32px;color:var(--ts-secondary)">{{ ovSub }}</div>
             </div>
@@ -882,7 +894,7 @@ class Component extends DCLogic {
     policySet: "current", status: "idle", run: null, answers: {}, selecting: {}, lastGood: null, prevRun: null, changes: {},
     elapsed: 0, error: null, toast: null, exported: false,
     policyShort: null, policyData: null, policyLoading: false, policyVersion: "current", hlSection: null, hlQuote: null,
-    uploaded: null, feed: [], feedOpen: false, policyDiff: false, policyQuery: "", connFilter: "all", conns: {}, connOpen: null, connDraft: {}, viewer: null, viewerData: null, viewerLoading: false, viewerDiff: false, viewerVersion: "current",
+    uploaded: null, uploading: null, uploadedNew: false, feed: [], feedOpen: false, policyDiff: false, policyQuery: "", connFilter: "all", conns: {}, connOpen: null, connDraft: {}, viewer: null, viewerData: null, viewerLoading: false, viewerDiff: false, viewerVersion: "current",
   };
   fileRef = React.createRef();
   viewerRef = React.createRef();
@@ -925,7 +937,12 @@ class Component extends DCLogic {
       const qn = window.TSBackend.parseQuestionnaire(text, f.name.replace(/\.csv$/i, ""));
       if (!qn.questions.length) { this.flash(`No questions found in ${f.name}`); return; }
       this.abort?.abort(); clearInterval(this.timer);
-      this.setState({ ...this.blank(), policySet: this.state.policySet, uploaded: { ...qn, csv: text }, view: "questionnaire", tab: "results", selectedId: null, filter: "all", feed: [] }, () => this.save());
+      // Reading state (the S mark sways), then back to the list where the file shows as New.
+      this.setState({ uploading: { name: qn.name, count: qn.questions.length }, view: "overview", selectedId: null });
+      clearTimeout(this.uploadT);
+      this.uploadT = setTimeout(() => {
+        this.setState({ ...this.blank(), policySet: this.state.policySet, uploaded: { ...qn, csv: text }, uploadedNew: true, uploading: null, view: "overview", tab: "results", selectedId: null, filter: "all", feed: [] }, () => this.save());
+      }, 2600);
     });
   };
   useDemo = () => { this.abort?.abort(); clearInterval(this.timer); this.setState({ ...this.blank(), policySet: this.state.policySet, uploaded: null, selectedId: null, filter: "all", feed: [] }, () => this.save()); };
@@ -1531,8 +1548,9 @@ class Component extends DCLogic {
       pastRows: s.past.map((p) => ({ ...p })), pol, pv, bench,
       feed, viewer, feedRef: this.feedRef, viewerRef: this.viewerRef, fileRef: this.fileRef,
       qnTitle: s.uploaded ? s.uploaded.name : "2026 CAIQ questionnaire",
-      ovSub: s.uploaded ? `Uploaded questionnaire · ${total} questions` : "Current questionnaire · CAIQ v4.1",
-      up: { is: !!s.uploaded, replayNote: !!s.uploaded && this.mode() === "replay" },
+      ovSub: s.uploaded ? `${s.uploadedNew ? "Uploaded just now" : "Uploaded questionnaire"} · ${total} questions · CAIQ v4.1` : "Current questionnaire · CAIQ v4.1",
+      up: { is: !!s.uploaded, isNew: !!s.uploaded && !!s.uploadedNew, replayNote: !!s.uploaded && this.mode() === "replay" },
+      isUploading: !!s.uploading, uploadingName: s.uploading ? s.uploading.name + ".csv" : "", uploadingCount: s.uploading ? s.uploading.count : 0,
       pickFile: this.pickFile, onFile: this.onFile, useDemo: this.useDemo, closeViewer: this.closeViewer,
       mainRef: this.mainRef, closeRef: this.closeRef, tabsRef: this.tabsRef,
       panelTop: `${Math.max(s.panelTopPx || 244, 120)}px`,
@@ -1541,7 +1559,7 @@ class Component extends DCLogic {
       goBenchmark: () => this.setState({ view: "benchmark", selectedId: null }),
       goConnectors: () => this.setState({ view: "connectors", selectedId: null }),
       conn, closeConn: () => this.setState({ connOpen: null }),
-      openQuestionnaire: () => this.setState({ view: "questionnaire" }),
+      openQuestionnaire: () => this.setState({ view: "questionnaire", uploadedNew: false }),
       openReference: () => this.setState({ view: "reference", selectedId: null }),
       toggleTheme: () => { const t = s.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; localStorage.setItem("ts-theme", t); this.setState({ theme: t }); },
       showResults: () => this.setState({ tab: "results" }),
