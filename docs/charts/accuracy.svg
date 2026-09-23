@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="196" viewBox="0 0 720 196"><rect width="720" height="196" fill="#0b0d10"/><text x="16" y="26" fill="#e6e9ee" font-size="15" font-weight="600" font-family="Inter,system-ui,sans-serif">Accuracy vs answer key — Qwen3-235B-A22B-Instruct-2507</text><text x="238" y="64" text-anchor="end" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">verdict correct</text>
+<rect x="250" y="50" width="360" height="20" rx="3" fill="#7dd3fc"/>
+<text x="618" y="64" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">94%</text>
+<text x="238" y="98" text-anchor="end" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">flag correct</text>
+<rect x="250" y="84" width="352.3404255319149" height="20" rx="3" fill="#7dd3fc"/>
+<text x="610.3404255319149" y="98" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">92%</text>
+<text x="238" y="132" text-anchor="end" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">key facts correct</text>
+<rect x="250" y="118" width="352.3404255319149" height="20" rx="3" fill="#7dd3fc"/>
+<text x="610.3404255319149" y="132" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">92%</text>
+<text x="238" y="166" text-anchor="end" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">all three</text>
+<rect x="250" y="152" width="329.36170212765956" height="20" rx="3" fill="#7dd3fc"/>
+<text x="587.3617021276596" y="166" fill="#e6e9ee" font-size="13" font-family="ui-monospace,Menlo,monospace">86%</text></svg>

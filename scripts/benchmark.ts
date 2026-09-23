@@ -16,6 +16,7 @@ import type { Answer, Engine, Question } from "../src/lib/types";
 
 const RUNS = Number(process.env.BENCH_RUNS ?? 2);
 const SLUG = process.env.BENCH_SLUG ?? "adyen-vendor-security-assessment";
+let COMPANY = "";
 const OPEN_CANDIDATES = (process.env.BENCH_OPEN ?? "Qwen/Qwen3-235B-A22B-Instruct-2507,openai/gpt-oss-120b,deepseek-ai/DeepSeek-V4-Flash-0731,Qwen/Qwen3-30B-A3B-Instruct-2507,google/gemma-3-27b-it").split(",").map((s) => s.trim()).filter(Boolean);
 
 interface Candidate { id: string; provider: "nebius" | "closed"; engine: Engine; primary?: boolean }
@@ -65,7 +66,7 @@ function pickClosed(ids: string[]): string[] {
 async function timeRun(engine: Engine, questions: Question[], prospect: string) {
   const t0 = Date.now();
   let first = 0;
-  const r = await runPipeline({ engine, company: companyProfile(), prospect, questions, brief: false }, (e) => { if (e.type === "delta" && !first) first = Date.now() - t0; });
+  const r = await runPipeline({ engine, companySlug: COMPANY, company: companyProfile(COMPANY), prospect, questions, brief: false }, (e) => { if (e.type === "delta" && !first) first = Date.now() - t0; });
   const stats: RunStats = {
     wallMs: r.metrics.elapsedMs, firstTokenMs: first, cost: r.metrics.cost,
     tokensIn: r.metrics.usage.reduce((s, u) => s + u.input, 0), tokensOut: r.metrics.usage.reduce((s, u) => s + u.output, 0),
@@ -99,6 +100,7 @@ async function grade(judgeModel: string, questions: Question[], answers: Answer[
 
 async function main() {
   const q = loadQuestionnaires().find((x) => x.slug === SLUG)!;
+  COMPANY = q.company;
   if (!process.env.NEBIUS_API_KEY) throw new Error("NEBIUS_API_KEY missing");
   const hasClosed = !!baselineEngine("x").apiKey;
   if (!hasClosed) console.warn("no closed-model key: running the open-model matrix only; judge must be set via JUDGE_MODEL (Nebius)");

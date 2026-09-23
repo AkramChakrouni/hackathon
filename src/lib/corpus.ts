@@ -4,8 +4,18 @@ import type { Chunk, Question } from "./types";
 
 const DATA = path.join(process.cwd(), "data");
 
-export function companyProfile() {
-  return fs.readFileSync(path.join(DATA, "company.md"), "utf8");
+export interface Company { slug: string; name: string }
+
+export function listCompanies(): Company[] {
+  const dir = path.join(DATA, "companies");
+  return fs.readdirSync(dir).filter((d) => fs.existsSync(path.join(dir, d, "company.md"))).sort().map((slug) => {
+    const first = fs.readFileSync(path.join(dir, slug, "company.md"), "utf8").split("\n").find((l) => l.startsWith("# ")) ?? slug;
+    return { slug, name: first.replace(/^#\s*/, "").split(/\s[—–-]\s/)[0].trim() };
+  });
+}
+
+export function companyProfile(company: string) {
+  return fs.readFileSync(path.join(DATA, "companies", company, "company.md"), "utf8");
 }
 
 function frontmatter(src: string) {
@@ -18,8 +28,11 @@ function frontmatter(src: string) {
   return { meta, body: m ? src.slice(m[0].length) : src };
 }
 
-/** Paragraph-aware chunking, ~900 chars, 1-paragraph overlap. */
+/** Paragraph-aware chunking, ~900 chars, 1-paragraph overlap. Past-answer documents (**Q … **A) are split one Q/A pair per chunk so retrieval is exact. */
 function chunkText(body: string, max = 900) {
+  if (/^\*\*\S*Q\b/m.test(body)) {
+    return body.split(/\n(?=\*\*\S*Q\b)/).slice(1).map((qa) => qa.trim()).filter(Boolean);
+  }
   const paras = body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   const out: string[] = [];
   let cur = "";
@@ -36,18 +49,24 @@ function chunkText(body: string, max = 900) {
 }
 
 export function loadDocuments(): Chunk[] {
-  const dir = path.join(DATA, "knowledge");
   const chunks: Chunk[] = [];
   let id = 0;
-  for (const f of fs.readdirSync(dir).filter((f) => f.endsWith(".md")).sort()) {
-    const { meta, body } = frontmatter(fs.readFileSync(path.join(dir, f), "utf8"));
-    const title = meta.title ?? f.replace(/\.md$/, "");
-    for (const text of chunkText(body)) {
-      chunks.push({ id: id++, doc: f.replace(/\.md$/, ""), title, kind: meta.kind ?? "doc", owner: meta.owner ?? "", text: `${title}\n${text}` });
+  for (const { slug } of listCompanies()) {
+    const dir = path.join(DATA, "companies", slug, "knowledge");
+    for (const f of fs.readdirSync(dir).filter((f) => f.endsWith(".md")).sort()) {
+      const { meta, body } = frontmatter(fs.readFileSync(path.join(dir, f), "utf8"));
+      const title = meta.title ?? f.replace(/\.md$/, "");
+      const label = meta.updated ? `${title} (updated ${meta.updated})` : title;
+      for (const text of chunkText(body)) {
+        chunks.push({ id: id++, company: slug, doc: f.replace(/\.md$/, ""), title, kind: meta.kind ?? "doc", owner: meta.owner ?? "", text: `${label}\n${text}` });
+      }
     }
   }
   return chunks;
 }
+
+/** CAIQ v4.1 / CCM domain codes → section names, so a bare CAIQ export gets readable sections. */
+const CCM: Record<string, string> = { "A&A": "Audit & Assurance", AIS: "Application & Interface Security", BCR: "Business Continuity & Resilience", CCC: "Change Control", CEK: "Cryptography & Key Management", DCS: "Datacenter Security", DSP: "Data Security & Privacy", GRC: "Governance, Risk & Compliance", HRS: "Human Resources", IAM: "Identity & Access Management", IPY: "Interoperability & Portability", IVS: "Infrastructure & Virtualization", LOG: "Logging & Monitoring", SEF: "Security Incident Management", STA: "Supply Chain & Transparency", TVM: "Threat & Vulnerability Management", UEM: "Universal Endpoint Management" };
 
 export function parseCsv(csv: string): Question[] {
   const rows: string[][] = [];
@@ -66,26 +85,30 @@ export function parseCsv(csv: string): Question[] {
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const [head, ...body] = rows.filter((r) => r.some((c) => c.trim()));
   const h = head.map((x) => x.trim().toLowerCase());
-  const iq = h.indexOf("question"), is = h.indexOf("section"), ii = h.indexOf("id");
-  return body.map((r, n) => ({
-    id: ii >= 0 && r[ii]?.trim() ? r[ii].trim() : `Q${String(n + 1).padStart(2, "0")}`,
-    section: is >= 0 ? (r[is] ?? "").trim() : "",
-    text: (iq >= 0 ? r[iq] : r[r.length - 1]).trim(),
-  })).filter((x) => x.text);
+  const iq = h.indexOf("question"), is = h.indexOf("section");
+  const ii = ["id", "question_id", "ref", "control id", "question id"].map((k) => h.indexOf(k)).find((i) => i >= 0) ?? -1;
+  return body.map((r, n) => {
+    const id = ii >= 0 && r[ii]?.trim() ? r[ii].trim() : `Q${String(n + 1).padStart(2, "0")}`;
+    const section = is >= 0 ? (r[is] ?? "").trim() : (CCM[id.split("-")[0]] ?? "");
+    return { id, section, text: (iq >= 0 ? r[iq] : r[r.length - 1]).trim() };
+  }).filter((x) => x.text);
 }
 
-export interface Questionnaire { slug: string; name: string; prospect: string; questions: Question[] }
+export interface Questionnaire { slug: string; name: string; prospect: string; company: string; questions: Question[] }
 
-const NAMES: Record<string, { name: string; prospect: string }> = {
-  "adyen-vendor-security-assessment": { name: "Vendor Security Assessment 2026", prospect: "Adyen" },
-  "rfp-eu-bank-data-platform": { name: "RFP — Data Platform", prospect: "ING" },
+const NAMES: Record<string, { name: string; prospect: string; company: string }> = {
+  "personivo-caiq-v4.1": { name: "CAIQ v4.1 — CSA STAR self-assessment", prospect: "ABN AMRO", company: "personivo" },
+  "adyen-vendor-security-assessment": { name: "Vendor Security Assessment 2026", prospect: "Adyen", company: "kestrel" },
+  "rfp-eu-bank-data-platform": { name: "RFP — Data Platform", prospect: "ING", company: "kestrel" },
 };
 
 export function loadQuestionnaires(): Questionnaire[] {
   const dir = path.join(DATA, "questionnaires");
-  return fs.readdirSync(dir).filter((f) => f.endsWith(".csv")).sort().map((f) => {
+  const order = Object.keys(NAMES);
+  const rank = (f: string) => { const i = order.indexOf(f.replace(/\.csv$/, "")); return i < 0 ? 99 : i; };
+  return fs.readdirSync(dir).filter((f) => f.endsWith(".csv")).sort((a, b) => rank(a) - rank(b)).map((f) => {
     const slug = f.replace(/\.csv$/, "");
-    const meta = NAMES[slug] ?? { name: slug, prospect: "" };
+    const meta = NAMES[slug] ?? { name: slug, prospect: "", company: listCompanies()[0]?.slug ?? "" };
     return { slug, ...meta, questions: parseCsv(fs.readFileSync(path.join(dir, f), "utf8")) };
   });
 }

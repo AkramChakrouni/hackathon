@@ -7,8 +7,11 @@ export type Flag = "none" | "needs_approval" | "no_evidence";
 
 export interface Question { id: string; section: string; text: string }
 
+export type Verdict = "yes" | "no" | "partial" | "unknown" | "na";
+
 export interface Chunk {
   id: number;
+  company: string;  // workspace slug
   doc: string;      // file slug
   title: string;
   kind: string;
@@ -22,6 +25,7 @@ export interface Citation { chunk: number; doc: string; title: string; score: nu
 export interface Answer {
   id: string;
   text: string;
+  verdict: Verdict;        // yes/no for closed questions (CAIQ style), na for open ones
   confidence: number;
   citations: Citation[];   // what the drafter actually cited
   evidence: Citation[];    // everything that was retrieved for the question (top-k)

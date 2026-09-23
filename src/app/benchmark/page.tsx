@@ -9,12 +9,20 @@ interface Bench { generatedAt: string; questionnaire: string; questions: number;
 function load(): Bench | null {
   try { return JSON.parse(fs.readFileSync(path.join(process.cwd(), "data", "benchmark.json"), "utf8")); } catch { return null; }
 }
+interface EvalRow { id: string; trap: string; expected: string; verdict: string; expectedFlag: string; flag: string; verdictOk: boolean; flagOk: boolean; factsOk: boolean; invented: boolean; note: string; answer: string }
+interface EvalResult { questionnaire: string; name: string; company: string; model: string; questions: number; wallMs: number; cost: number; verdictAcc: number; flagAcc: number; factsAcc: number; invented: number; allThree: number; traps: { id: string; trap: string; ok: boolean; verdictOk: boolean; flagOk: boolean; factsOk: boolean }[]; rows: EvalRow[] }
+interface Eval { generatedAt: string; judge: string; results: EvalResult[] }
+function loadEval(): Eval | null {
+  try { return JSON.parse(fs.readFileSync(path.join(process.cwd(), "data", "eval.json"), "utf8")); } catch { return null; }
+}
 const short = (m: string) => m.split("/").pop() ?? m;
 const s = (ms: number, d = 1) => `${(ms / 1000).toFixed(d)}s`;
 
 export default function Benchmark() {
   const b = load();
+  const ev = loadEval();
   if (!b) return <main className="p-10 text-mute">No benchmark yet — run <code className="font-mono text-fg">npm run benchmark</code>.</main>;
+  const primaryEval = ev?.results.find((r) => r.model === b.primary) ?? ev?.results[0];
   const ok = b.results.filter((r) => !r.error);
   const primary = ok.find((r) => r.id === b.primary)!;
   const base = ok.find((r) => r.id === b.baseline);
@@ -42,6 +50,53 @@ export default function Benchmark() {
           <Tile label="Cost per questionnaire" value={`$${primary.costMean.toFixed(3)}`} sub={`list price · manual: 20–40 h`} tone="ok" />
           <Tile label="Quality (blind, 1–5)" value={primary.quality.toFixed(2)} sub={`${primary.hallucinations} hallucinated answers`} tone="ok" />
         </div>
+      )}
+
+      {ev && primaryEval && (
+        <>
+          <h2 className="mt-10 text-lg font-semibold">Accuracy against a held-out answer key</h2>
+          <p className="text-sm text-mute">
+            {primaryEval.name} · {primaryEval.questions} CAIQ v4.1 questions for <span className="text-fg">Personivo B.V.</span>, answered from 3 policies and last year&apos;s questionnaire. The key was never shown to the pipeline.
+            Scored on three things per answer: Yes/No/Unknown verdict, expected flag (green → ready, orange → review, red → no evidence), and key facts with nothing invented (judge {short(ev.judge)} sees the key).
+          </p>
+          <div className="mt-4 grid grid-cols-5 gap-3 text-sm">
+            <Tile label="Verdict correct" value={`${primaryEval.verdictAcc}%`} sub="Yes / No / Unknown" tone="ok" />
+            <Tile label="Flag correct" value={`${primaryEval.flagAcc}%`} sub="ready · review · no evidence" tone={primaryEval.flagAcc >= 80 ? "ok" : "warn"} />
+            <Tile label="Key facts correct" value={`${primaryEval.factsAcc}%`} sub={`${primaryEval.invented} answers with an invented fact`} tone={primaryEval.factsAcc >= 80 ? "ok" : "warn"} />
+            <Tile label="All three correct" value={`${primaryEval.allThree}%`} sub="verdict + flag + facts" tone={primaryEval.allThree >= 70 ? "ok" : "warn"} />
+            <Tile label="Traps caught" value={`${primaryEval.traps.filter((t) => t.ok).length}/${primaryEval.traps.length}`} sub="outdated · conflict · uncovered · honest no" tone={primaryEval.traps.filter((t) => t.ok).length >= primaryEval.traps.length - 1 ? "ok" : "warn"} />
+          </div>
+          <table className="mt-4 w-full text-sm">
+            <thead className="text-left text-[11px] uppercase tracking-wider text-mute"><tr><th className="pb-2 font-medium">Trap</th><th className="pb-2 font-medium">Question</th><th className="pb-2 font-medium">Expected</th><th className="pb-2 font-medium">Got</th><th className="pb-2 font-medium">Verdict</th><th className="pb-2 font-medium">Flag</th><th className="pb-2 font-medium">Facts</th></tr></thead>
+            <tbody className="font-mono text-xs">
+              {primaryEval.rows.filter((r) => r.trap).map((r) => (
+                <tr key={r.id} className="border-t border-line align-top">
+                  <td className="py-2 pr-3 text-mute">{r.trap.split(":")[0]}</td>
+                  <td className="py-2 pr-3">{r.id}</td>
+                  <td className="py-2 pr-3 text-mute">{r.expected.toLowerCase()} · {r.expectedFlag}</td>
+                  <td className="py-2 pr-3">{r.verdict} · {r.flag}</td>
+                  <td className={`py-2 pr-3 ${r.verdictOk ? "text-ok" : "text-bad"}`}>{r.verdictOk ? "✓" : "✗"}</td>
+                  <td className={`py-2 pr-3 ${r.flagOk ? "text-ok" : "text-bad"}`}>{r.flagOk ? "✓" : "✗"}</td>
+                  <td className={`py-2 ${r.factsOk ? "text-ok" : "text-bad"}`}>{r.factsOk ? "✓" : "✗"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {ev.results.length > 1 && (
+            <table className="mt-6 w-full text-sm">
+              <thead className="text-left text-[11px] uppercase tracking-wider text-mute"><tr><th className="pb-2 font-medium">Drafter</th><th className="pb-2 text-right font-medium">Verdict</th><th className="pb-2 text-right font-medium">Flag</th><th className="pb-2 text-right font-medium">Facts</th><th className="pb-2 text-right font-medium">All three</th><th className="pb-2 text-right font-medium">Traps</th><th className="pb-2 text-right font-medium">Wall-clock</th><th className="pb-2 text-right font-medium">Cost</th></tr></thead>
+              <tbody className="font-mono text-xs tabular-nums">
+                {ev.results.map((r) => (
+                  <tr key={r.model} className={`border-t border-line ${r.model === b.primary ? "bg-accent/5" : ""}`}>
+                    <td className="py-2 pr-3 font-sans text-sm">{short(r.model)}</td>
+                    <td className="py-2 pr-3 text-right">{r.verdictAcc}%</td><td className="py-2 pr-3 text-right">{r.flagAcc}%</td><td className="py-2 pr-3 text-right">{r.factsAcc}%</td><td className="py-2 pr-3 text-right">{r.allThree}%</td>
+                    <td className="py-2 pr-3 text-right">{r.traps.filter((t) => t.ok).length}/{r.traps.length}</td><td className="py-2 pr-3 text-right">{s(r.wallMs)}</td><td className="py-2 text-right">${r.cost.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
 
       <h2 className="mt-10 text-lg font-semibold">Model selection matrix</h2>

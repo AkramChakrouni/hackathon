@@ -170,7 +170,7 @@ tr.hi td.nb{color:var(--ok)}
     <div class="big">Live demo</div>
     <div class="clock">50 questions · watch the clock</div>
     <div class="ctx">Vendor Security Assessment 2026 from Adyen · 26 docs indexed</div>
-    <a class="link" href="{{APP_URL}}" target="_blank" rel="noopener">{{APP_URL}}</a>
+    <a class="link" href="https://hackathon-ten-zeta-43.vercel.app" target="_blank" rel="noopener">https://hackathon-ten-zeta-43.vercel.app</a>
   </section>
 
   <!-- 5 · Architecture -->
@@ -183,11 +183,11 @@ tr.hi td.nb{color:var(--ok)}
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
         <div class="stack">
           <div class="lbl">Concurrent</div>
-          <div class="box"><div class="st">Stage 1 · Triage</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">category + risk · JSON mode · 10 q/call</div></div>
+          <div class="box"><div class="st">Stage 1 · Triage</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">category + risk · plain JSON · 5 q/call</div></div>
           <div class="box"><div class="st">Stage 2 · Retrieve</div><div class="model">Qwen3-Embedding-8B</div><div class="d">in-memory cosine index · &lt; 1 ms</div></div>
         </div>
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
-        <div class="box draft"><div class="st">Stage 3 · Draft</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">evidence-only prompt · 2 q/call · all calls streamed in parallel</div></div>
+        <div class="box draft"><div class="st">Stage 3 · Draft</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">evidence-only prompt · 1 q/call · 50 calls streamed in parallel</div></div>
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
         <div class="box io"><div class="st">Output</div><div class="model">Workspace</div><div class="d">SSE → Next.js 16 on Vercel<br>cite · confidence · flag</div></div>
       </div>
@@ -204,17 +204,17 @@ tr.hi td.nb{color:var(--ok)}
     <div class="kicker">Measurable model advantage</div>
     <h2 style="margin-bottom:24px">Measured, not claimed</h2>
     <table>
-      <thead><tr><th>Metric · 50 questions</th><th>Qwen3-235B-A22B on Nebius</th><th>GPT-4o baseline</th></tr></thead>
+      <thead><tr><th>Metric · 50 CAIQ v4.1 questions</th><th>Attest · Qwen3-235B on Nebius</th><th>Baseline</th></tr></thead>
       <tbody>
-        <tr><td class="metric">Wall-clock</td><td class="v nb">{{NEBIUS_WALL}}s</td><td class="v bl">{{BASELINE_WALL}}s</td></tr>
-        <tr><td class="metric">Time to first token</td><td class="v nb">{{NEBIUS_TTFT}}s</td><td class="v bl">{{BASELINE_TTFT}}s</td></tr>
-        <tr class="hi"><td class="metric">Cost per questionnaire</td><td class="v nb">${{NEBIUS_COST}} · {{COST_X}}× cheaper</td><td class="v bl">${{BASELINE_COST}}</td></tr>
-        <tr><td class="metric">Blind judge quality (1–5)</td><td class="v nb">{{NEBIUS_Q}}</td><td class="v bl">{{BASELINE_Q}}</td></tr>
-        <tr><td class="metric">Head-to-head wins · ties</td><td class="v nb">{{NEBIUS_WINS}} · {{TIES}}</td><td class="v bl">{{BASELINE_WINS}}</td></tr>
+        <tr class="hi"><td class="metric">Verdict correct vs held-out answer key</td><td class="v nb">94%</td><td class="v bl">manual: 20–40 h</td></tr>
+        <tr><td class="metric">Key facts correct · invented facts</td><td class="v nb">92% · 1 of 50</td><td class="v bl">—</td></tr>
+        <tr><td class="metric">Traps caught (outdated · conflict · uncovered · honest no)</td><td class="v nb">6 of 8</td><td class="v bl">—</td></tr>
+        <tr><td class="metric">Wall-clock · first token</td><td class="v nb">7.9s · 1.7s</td><td class="v bl">20–40 h</td></tr>
+        <tr class="hi"><td class="metric">Cost per questionnaire</td><td class="v nb">$0.023 · 8–13× cheaper</td><td class="v bl">GPT-5 $0.19 · GPT-4o $0.30 list price</td></tr>
       </tbody>
     </table>
-    <div class="claim">Same prompts, same evidence, same batching, blind judge.</div>
-    <div class="small">Manual today: 20–40 hours per questionnaire · {{APP_URL}}/benchmark</div>
+    <div class="claim">Answer key never shown to the model. Same prompts, evidence and parallelism for every model.</div>
+    <div class="small">Manual today: 20–40 hours per questionnaire · https://hackathon-ten-zeta-43.vercel.app/benchmark</div>
   </section>
 
   <!-- 7 · Control & adaptability -->
@@ -251,7 +251,7 @@ tr.hi td.nb{color:var(--ok)}
       <div class="row"><b>Expansion</b><div>Security questionnaires → RFPs → due diligence → vendor risk, both sides of the table → per-customer fine-tuned drafter.</div></div>
       <div class="row"><b>Margin</b><div>Open-model costs make usage-based pricing work at <span class="ok">&gt;80% gross margin</span>.</div></div>
     </div>
-    <div class="ask"><span class="pill">Ask: pilot customers</span><span class="team">{{TEAM}}</span></div>
+    <div class="ask"><span class="pill">Ask: pilot customers</span><span class="team">Akram Chakrouni · Yahia</span></div>
   </section>
 
   <div id="footer">Attest · Accel AI Innovate Amsterdam · Nebius Token Factory</div>

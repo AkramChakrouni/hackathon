@@ -1,11 +1,12 @@
 import { BASELINE_MODEL, MODELS, client, embed, price } from "./nebius";
 import { classifyPrompt, synthesisPrompt, briefPrompt, CATEGORIES, type EvidenceBlock } from "./prompts";
 import { search, chunkById } from "./retrieval";
-import type { Answer, Category, Citation, Engine, Event, Flag, Metrics, Question, Risk, Usage } from "./types";
+import type { Answer, Category, Citation, Engine, Event, Flag, Metrics, Question, Risk, Usage, Verdict } from "./types";
 
 export interface RunOptions {
   engine: Engine;
-  company: string;
+  companySlug: string;        // restricts retrieval to this workspace's knowledge base
+  company: string;            // profile text
   prospect: string;
   questions: Question[];
   topK?: number;
@@ -67,7 +68,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     const vectors = await embedCached(o.questions.map((q) => q.text), addUsage);
     const cites = new Map<string, Citation[]>();
     o.questions.forEach((q, i) => {
-      const c = search(vectors[i], o.topK ?? 4);
+      const c = search(vectors[i], o.topK ?? 6, o.companySlug);
       cites.set(q.id, c);
       emit({ type: "retrieved", id: q.id, citations: c });
     });
@@ -118,10 +119,11 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
       const used = r.sources.length ? r.sources.filter((n) => n >= 1 && n <= qc.length).map((n) => qc[n - 1]) : qc.slice(0, 2);
       let flag: Flag = r.flag;
       if (classes[q.id]?.risk === "high" && flag === "none") flag = "needs_approval"; // if triage already finished
-      if ((qc[0]?.score ?? 0) < 0.35 && flag === "none") flag = "no_evidence";
+      if (((qc[0]?.score ?? 0) < 0.35 || r.verdict === "unknown") && flag === "none") flag = "no_evidence";
       const a: Answer = {
         id: q.id,
         text: r.answer.trim() || "No answer produced — needs SME input.",
+        verdict: r.verdict,
         // model self-report blended with retrieval strength so the bar actually separates well-covered from thin evidence
         confidence: Number((0.6 * Math.max(0, Math.min(1, isNaN(r.confidence) ? 0.5 : r.confidence)) + 0.4 * Math.max(0, Math.min(1, ((qc[0]?.score ?? 0) - 0.4) / 0.35))).toFixed(2)),
         citations: used,
@@ -185,12 +187,12 @@ class BlockParser {
   private buf = "";
   private cur: string | null = null;
   private field: "answer" | "other" = "other";
-  private out = new Map<string, { answer: string; confidence: number; sources: number[]; flag: Flag }>();
+  private out = new Map<string, { answer: string; verdict: Verdict; confidence: number; sources: number[]; flag: Flag }>();
   private ids: string[];
   constructor(ids: string[], private onDelta: (id: string, text: string) => void) {
     this.ids = ids;
     if (ids.length === 1) this.cur = ids[0];
-    for (const id of ids) this.out.set(id, { answer: "", confidence: NaN, sources: [], flag: "none" });
+    for (const id of ids) this.out.set(id, { answer: "", verdict: "na", confidence: NaN, sources: [], flag: "none" });
   }
   push(s: string) {
     this.buf += s;
@@ -200,7 +202,7 @@ class BlockParser {
       this.buf = this.buf.slice(nl + 1);
     }
     // stream partial answer text (keep a small tail so a keyword starting a new line isn't half-emitted)
-    if (this.field === "answer" && this.cur && this.buf.length > 24 && !/^(CONFIDENCE|SOURCES|FLAG|\[)/i.test(this.buf)) {
+    if (this.field === "answer" && this.cur && this.buf.length > 24 && !/^(VERDICT|CONFIDENCE|SOURCES|FLAG|\[)/i.test(this.buf)) {
       const emitPart = this.buf.slice(0, this.buf.length - 12);
       this.buf = this.buf.slice(emitPart.length);
       this.emitAnswer(emitPart);
@@ -218,6 +220,7 @@ class BlockParser {
     const r = this.out.get(this.cur)!;
     let m: RegExpMatchArray | null;
     if ((m = l.match(/^\s*ANSWER:\s*(.*)$/i))) { this.field = "answer"; this.emitAnswer(m[1]); return; }
+    if ((m = l.match(/^\s*VERDICT:\s*(\w+)/i))) { this.field = "other"; const v = m[1].toLowerCase(); r.verdict = (["yes", "no", "partial", "unknown", "na"].includes(v) ? v : "na") as Verdict; return; }
     if ((m = l.match(/^\s*CONFIDENCE:\s*([\d.]+)/i))) { this.field = "other"; r.confidence = parseFloat(m[1]); return; }
     if ((m = l.match(/^\s*SOURCES:\s*(.*)$/i))) { this.field = "other"; r.sources = [...m[1].matchAll(/\d+/g)].map((x) => Number(x[0])); return; }
     if ((m = l.match(/^\s*FLAG:\s*(\w+)/i))) { this.field = "other"; const f = m[1].toLowerCase(); r.flag = f === "needs_approval" || f === "no_evidence" ? f : "none"; return; }
