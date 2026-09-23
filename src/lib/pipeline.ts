@@ -14,6 +14,11 @@ async function embedCached(texts: string[]) {
   return texts.map((t) => embedCache.get(t)!);
 }
 
+/** GPT-5-family models reject temperature/max_tokens; they take max_completion_tokens (which also pays for reasoning) and reasoning_effort. */
+function gen(model: string, maxTokens: number) {
+  return /^(openai\/)?(gpt-[5-9]|o\d)/.test(model) ? { max_completion_tokens: maxTokens * 8, reasoning_effort: (/gpt-5/.test(model) ? "minimal" : "none") as "minimal" } : { temperature: 0, max_tokens: maxTokens };
+}
+
 async function pool<T>(items: T[], n: number, f: (x: T) => Promise<void>) {
   const q = [...items];
   await Promise.all(Array.from({ length: Math.min(n, q.length) }, async () => { for (;;) { const x = q.shift(); if (x === undefined) return; await f(x); } }));
@@ -37,7 +42,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
   let vectors: (number[] | null)[] = o.questions.map(() => null);
   try { vectors = await embedCached(o.questions.map((q) => contextual(q))); account("Qwen/Qwen3-Embedding-8B", o.questions.reduce((s, q) => s + Math.ceil(q.text.length / 4), 0), 0); } catch { /* shortlist unavailable → whole corpus */ }
 
-  await pool(o.questions.map((q, i) => ({ q, i })), o.concurrency ?? Number(process.env.CONCURRENCY ?? 50), async ({ q, i }) => {
+  await pool(o.questions.map((q, i) => ({ q, i })), o.concurrency ?? (o.engine.name === "closed" ? Number(process.env.CLOSED_CONCURRENCY ?? 6) : Number(process.env.CONCURRENCY ?? 50)), async ({ q, i }) => {
     const started = Date.now();
     let inTok = 0, outTok = 0;
     // ── Step 1: source selection (small model) ──
@@ -47,7 +52,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     let selection: Selection = { category: "security", relevant_sections: [], relevant_past_answers: [], coverage: "none" };
     let rawSmall: string | undefined, selMs = 0;
     try {
-      const r = await oa.chat.completions.create({ model: o.engine.small, messages: selectionPrompt(contextual(q), cand.sections), temperature: 0, max_tokens: 160 }, { signal: o.signal });
+      const r = await oa.chat.completions.create({ model: o.engine.small, messages: selectionPrompt(contextual(q), cand.sections), ...gen(o.engine.small, 160) }, { signal: o.signal });
       inTok += r.usage?.prompt_tokens ?? 0; outTok += r.usage?.completion_tokens ?? 0; account(o.engine.small, r.usage?.prompt_tokens ?? 0, r.usage?.completion_tokens ?? 0);
       rawSmall = r.choices[0].message.content ?? "";
       const j = parseJson<Partial<Selection>>(rawSmall);
@@ -61,7 +66,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
         };
         if (selection.coverage !== "none" && selection.relevant_sections.length === 0) selection.coverage = "none";
       }
-    } catch (e) { if (o.signal?.aborted) throw e; }
+    } catch (e) { if (o.signal?.aborted) throw e; console.error(`[${o.engine.name}] select ${q.id}:`, (e as Error).message.slice(0, 200)); }
     selMs = Date.now() - started;
     emit({ type: "selected", question_id: q.id, selection, ms: selMs });
     trace("select", `${selection.coverage} · ${selection.relevant_sections.length ? selection.relevant_sections.join(", ") : "no section"} · ${selection.category}`, o.engine.small);
@@ -75,12 +80,13 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     if (selection.coverage === "none" && !selected.length && cand.complete && (cand.topScore ?? 0) >= 0.5) writerSections = cand.sections.slice(0, 3);
     if (writerSections.length) {
       try {
-        const r = await oa.chat.completions.create({ model: o.engine.large, messages: answerPrompt(contextual(q), writerSections, pastSel), temperature: 0, max_tokens: 600 }, { signal: o.signal });
+        const r = await oa.chat.completions.create({ model: o.engine.large, messages: answerPrompt(contextual(q), writerSections, pastSel), ...gen(o.engine.large, 600) }, { signal: o.signal });
         inTok += r.usage?.prompt_tokens ?? 0; outTok += r.usage?.completion_tokens ?? 0; account(o.engine.large, r.usage?.prompt_tokens ?? 0, r.usage?.completion_tokens ?? 0);
         rawLarge = r.choices[0].message.content ?? "";
         raw = parseJson<ModelAnswer>(rawLarge);
+        if (!raw) console.error(`[${o.engine.name}] write ${q.id}: no JSON in`, rawLarge.slice(0, 160));
         trace("write", raw ? `${raw.answer ?? "?"} · ${raw.sources?.length ?? 0} quote${(raw.sources?.length ?? 0) === 1 ? "" : "s"}${raw.conflicts?.length ? ` · ${raw.conflicts.length} conflict` : ""}${raw.past_answer?.same_question ? ` · past ${raw.past_answer.ref}${raw.past_answer.consistent === false ? " differs" : ""}` : ""} · ${r.usage?.completion_tokens ?? 0} tokens` : "no JSON in response", o.engine.large);
-      } catch (e) { if (o.signal?.aborted) throw e; }
+      } catch (e) { if (o.signal?.aborted) throw e; console.error(`[${o.engine.name}] write ${q.id}:`, (e as Error).message.slice(0, 200)); }
     }
     // ── Steps 3 + 4: checks in code, deterministic flags ──
     if (!writerSections.length) trace("write", "skipped: nothing to write from", o.engine.large);

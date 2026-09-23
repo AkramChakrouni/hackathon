@@ -118,7 +118,7 @@ async function main() {
   const results: Result[] = [];
   results.push(await evaluate(nebiusEngine(), "nebius", key));
   const closed = await pickClosed();
-  if (closed) { try { results.push(await evaluate(baselineEngine(closed), "closed", key)); } catch (e) { console.warn("closed baseline failed:", (e as Error).message); } }
+  if (closed) { console.log(`closed baseline model: ${closed} via ${baselineEngine(closed).baseURL}`); try { results.push(await evaluate(baselineEngine(closed), "closed", key)); } catch (e) { console.warn("closed baseline failed:", (e as Error).message); } }
   else console.warn("no closed-model key (AI_GATEWAY_API_KEY): closed column skipped");
   fs.mkdirSync("benchmark", { recursive: true });
   fs.writeFileSync(path.join("benchmark", "benchmark.md"), md(results, key));

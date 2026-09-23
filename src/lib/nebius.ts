@@ -20,6 +20,7 @@ export const PRICES: Record<string, [number, number]> = {
   "google/gemma-3-27b-it": [0.1, 0.3],
   "openai/gpt-5": [1.25, 10],
   "gpt-5": [1.25, 10],
+  "gpt-6-sol": [2, 10],
   "openai/gpt-4o": [2.5, 10],
   "gpt-4o": [2.5, 10],
   "anthropic/claude-sonnet-4.5": [3, 15],

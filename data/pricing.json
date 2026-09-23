@@ -1,4 +1,5 @@
 {
+  "baseline": "gpt-6-sol",
   "prices": {
     "Qwen/Qwen3-235B-A22B-Instruct-2507": [
       0.19999999999999998,
@@ -28,13 +29,29 @@
       1.25,
       10
     ],
+    "gpt-5": [
+      1.25,
+      10
+    ],
     "openai/gpt-4o": [
+      2.5,
+      10
+    ],
+    "gpt-4o": [
       2.5,
       10
     ],
     "anthropic/claude-sonnet-4.5": [
       3,
       15
+    ],
+    "claude-sonnet-4-5": [
+      3,
+      15
+    ],
+    "gpt-6-sol": [
+      2,
+      10
     ]
   }
 }
