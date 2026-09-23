@@ -77,16 +77,20 @@ async function evaluate(engine: Engine, label: string, key: KeyRow[]): Promise<R
 async function pickClosed(): Promise<string | null> {
   const b = baselineEngine("x");
   if (!b.apiKey) return null;
-  if (process.env.BENCH_CLOSED) return process.env.BENCH_CLOSED;
+  if (process.env.BENCH_CLOSED || process.env.BASELINE_MODEL) return process.env.BENCH_CLOSED ?? process.env.BASELINE_MODEL!;
   try {
-    const r = await fetch(`${b.baseURL}/models`, { headers: { authorization: `Bearer ${b.apiKey}` } });
+    const r = await fetch(`${b.baseURL}/models`, { headers: { authorization: `Bearer ${b.apiKey}`, "x-api-key": b.apiKey, "anthropic-version": "2023-06-01" } });
     const j = (await r.json()) as { data: { id: string; pricing?: { input?: string; output?: string } }[] };
     for (const m of j.data ?? []) { const i = Number(m.pricing?.input), o = Number(m.pricing?.output); if (!isNaN(i) && !isNaN(o)) PRICES[m.id] = [i * 1e6, o * 1e6]; }
     const ver = (id: string) => parseFloat(id.match(/gpt-(\d+(?:\.\d+)?)/)?.[1] ?? "-1");
-    const gpt = j.data.map((m) => m.id).filter((id) => /^openai\/gpt-\d/.test(id) && !/mini|nano|codex|realtime|pro|search|chat|audio|transcribe|tts|image/.test(id)).sort((a, c) => ver(c) - ver(a) || c.localeCompare(a));
-    return gpt[0] ?? "openai/gpt-5";
-  } catch { return "openai/gpt-5"; }
+    // newest GPT flagship: "openai/gpt-5.x" on the gateway or "gpt-5.x" on OpenAI directly; never mini/nano/codex/etc.
+    const gpt = (j.data ?? []).map((m) => m.id).filter((id) => /^(openai\/)?gpt-\d/.test(id) && !/mini|nano|codex|realtime|pro|search|chat|audio|transcribe|tts|image|instruct|preview/.test(id)).sort((a, c) => ver(c) - ver(a) || c.localeCompare(a));
+    if (gpt[0]) return gpt[0];
+    const claude = (j.data ?? []).map((m) => m.id).filter((id) => /claude-(sonnet|opus)-4/.test(id)).sort().reverse();
+    return claude[0] ?? BASELINE_MODEL_FALLBACK;
+  } catch { return BASELINE_MODEL_FALLBACK; }
 }
+const BASELINE_MODEL_FALLBACK = baselineEngine().large;
 
 function md(results: Result[], key: KeyRow[]) {
   const cols = results.map((r) => `${r.engine} (${r.model_small === r.model_large ? r.model_large.split("/").pop() : `${r.model_small.split("/").pop()} + ${r.model_large.split("/").pop()}`})`);

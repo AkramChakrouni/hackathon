@@ -19,8 +19,11 @@ export const PRICES: Record<string, [number, number]> = {
   "deepseek-ai/DeepSeek-V4-Flash-0731": [0.14, 0.28],
   "google/gemma-3-27b-it": [0.1, 0.3],
   "openai/gpt-5": [1.25, 10],
+  "gpt-5": [1.25, 10],
   "openai/gpt-4o": [2.5, 10],
+  "gpt-4o": [2.5, 10],
   "anthropic/claude-sonnet-4.5": [3, 15],
+  "claude-sonnet-4-5": [3, 15],
 };
 
 function dynamic(): { prices: Record<string, [number, number]>; baseline?: string } {
@@ -33,7 +36,15 @@ function dynamic(): { prices: Record<string, [number, number]>; baseline?: strin
 const DYN = dynamic();
 Object.assign(PRICES, DYN.prices);
 
-export const BASELINE_MODEL = process.env.BASELINE_MODEL ?? DYN.baseline ?? "openai/gpt-5";
+/** Closed baseline provider: whichever key exists. Gateway (one key for all vendors) → OpenAI direct → Anthropic direct (OpenAI-compatible endpoint). */
+export const CLOSED = process.env.BASELINE_API_KEY || process.env.AI_GATEWAY_API_KEY
+  ? { baseURL: process.env.BASELINE_BASE_URL ?? "https://ai-gateway.vercel.sh/v1", apiKey: process.env.BASELINE_API_KEY ?? process.env.AI_GATEWAY_API_KEY!, model: process.env.BASELINE_MODEL ?? "openai/gpt-5" }
+  : process.env.OPENAI_API_KEY
+    ? { baseURL: "https://api.openai.com/v1", apiKey: process.env.OPENAI_API_KEY, model: process.env.BASELINE_MODEL ?? "gpt-5" }
+    : process.env.ANTHROPIC_API_KEY
+      ? { baseURL: "https://api.anthropic.com/v1", apiKey: process.env.ANTHROPIC_API_KEY, model: process.env.BASELINE_MODEL ?? "claude-sonnet-4-5" }
+      : { baseURL: "https://ai-gateway.vercel.sh/v1", apiKey: "", model: process.env.BASELINE_MODEL ?? DYN.baseline ?? "openai/gpt-5" };
+export const BASELINE_MODEL = CLOSED.model;
 
 export function price(model: string, input: number, output: number) {
   const p = PRICES[model] ?? [0, 0];
@@ -46,7 +57,7 @@ export function nebiusEngine(): Engine {
 
 /** Closed-model baseline (both tiers) through an OpenAI-compatible endpoint — Vercel AI Gateway by default. Benchmark only. */
 export function baselineEngine(model = BASELINE_MODEL): Engine {
-  return { name: "closed", baseURL: process.env.BASELINE_BASE_URL ?? "https://ai-gateway.vercel.sh/v1", apiKey: process.env.BASELINE_API_KEY ?? process.env.AI_GATEWAY_API_KEY ?? "", small: model, large: model };
+  return { name: "closed", baseURL: CLOSED.baseURL, apiKey: CLOSED.apiKey, small: model, large: model };
 }
 
 const clients = new Map<string, OpenAI>();
