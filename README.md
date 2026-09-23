@@ -7,7 +7,7 @@ using only the vendor's own evidence. Built at Accel AI Innovate Amsterdam (23 S
 ## How it works
 
 ```
-questionnaire (CSV)            knowledge base (data/knowledge/*.md)
+questionnaire (CSV)            knowledge base (data/companies/<company>/knowledge/*.md)
       │                                   │  npm run index → data/index.json
       ▼                                   ▼
  ┌─ triage ──────────────┐   ┌─ retrieve ──────────────────────┐   in parallel
@@ -29,7 +29,10 @@ questionnaire (CSV)            knowledge base (data/knowledge/*.md)
 - `src/lib/nebius.ts` — Token Factory client, model ids, list prices
 - `src/lib/retrieval.ts` — in-memory vector index (sub-millisecond search)
 - `src/app/api/run/route.ts` — `POST /api/run` → SSE
-- `scripts/benchmark.ts` — same pipeline on open vs closed models, blind LLM judge → `/benchmark`
+- `scripts/eval.ts` — accuracy against a held-out answer key (`data/answer-keys/`), traps included → `/benchmark`
+- `scripts/benchmark.ts` — model selection matrix: same pipeline for every candidate drafter, blind LLM judge
+- `scripts/report.ts` — regenerates `docs/results.md` and its charts from the JSON results
+- `docs/frontend-spec.md` — the UI contract (events, states, metrics) · `docs/submission.md` — the submission text
 
 ## Run
 
@@ -38,8 +41,16 @@ cp .env.example .env.local   # add NEBIUS_API_KEY (and TAVILY_API_KEY)
 npm install
 npm run index                # embed data/knowledge → data/index.json
 npm run dev                  # http://localhost:3000
-npm run benchmark            # needs a closed-model key; writes data/benchmark.json
+npm run eval                 # ground truth: data/eval.json
+npm run benchmark            # model matrix: data/benchmark.json (+ closed baseline when a key exists)
+npm run report               # docs/results.md + docs/charts/*.svg
 ```
+
+## Workspaces
+
+`data/companies/<slug>/company.md` + `knowledge/*.md` (Markdown with `title / kind / owner / updated` frontmatter).
+Demo company: **Personivo B.V.** (3 policies + last year's questionnaire, CAIQ v4.1 with a held-out answer key).
+Second workspace: Kestrel Cloud B.V. (26 synthetic documents, a vendor assessment and an RFP).
 
 ## Responsible design
 

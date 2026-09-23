@@ -106,12 +106,15 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     }, { signal: o.signal });
 
     const parser = new BlockParser(batch.map((q) => q.id), (id, text) => emit({ type: "delta", id, text }));
+    let gotUsage = false, outChars = 0;
     for await (const part of stream) {
       const d = part.choices?.[0]?.delta?.content;
-      if (d) parser.push(d);
-      if (part.usage) addUsage(o.engine.synthesizer, part.usage.prompt_tokens ?? 0, part.usage.completion_tokens ?? 0);
+      if (d) { parser.push(d); outChars += d.length; }
+      if (part.usage) { gotUsage = true; addUsage(o.engine.synthesizer, part.usage.prompt_tokens ?? 0, part.usage.completion_tokens ?? 0); }
     }
     parser.end();
+    // Some runtimes drop the trailing usage chunk of a stream; never under-report cost — estimate from characters (~4 chars/token).
+    if (!gotUsage) addUsage(o.engine.synthesizer, Math.ceil(synthesisPrompt(o.company, o.prospect, blocks).reduce((n, m) => n + m.content.length, 0) / 4), Math.ceil(outChars / 4));
     const latencyMs = Date.now() - started;
     for (const q of batch) {
       const r = parser.result(q.id);
