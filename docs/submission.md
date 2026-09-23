@@ -1,39 +1,35 @@
-# Submission — Accel AI Innovate Amsterdam, 23 Sep 2026
+# Submission — TenderScale · Accel AI Innovate Amsterdam, 23 Sep 2026
 
-Live product: https://hackathon-ten-zeta-43.vercel.app · Pitch deck: https://hackathon-ten-zeta-43.vercel.app/pitch.html · Numbers: https://hackathon-ten-zeta-43.vercel.app/benchmark · Results pack: `docs/results.md`
+Live product: https://hackathon-ten-zeta-43.vercel.app · Deck: https://hackathon-ten-zeta-43.vercel.app/pitch.html · Numbers: https://hackathon-ten-zeta-43.vercel.app/benchmark · Repo: https://github.com/AkramChakrouni/hackathon (MODELS.md, benchmark/benchmark.md, benchmark/answer_key_filled.xlsx)
 
 ## What did you build, and what problem does it solve?
 
-Every B2B software vendor that sells to a bank, insurer or enterprise gets the same thing before a deal closes: a security questionnaire or RFP with 50 to 200 questions. A sales engineer or security lead spends 20 to 40 hours per document stitching answers together from policies, last year's questionnaire and colleagues' heads, three to six times a quarter. One wrong answer can lose a six-figure deal or create legal exposure, so everything is re-checked by hand. Today they use spreadsheets, SharePoint search, and tools such as Loopio or Responsive that cost tens of thousands of dollars a year, run on closed models, and still leave the review to a human.
+Every software vendor that sells to a bank, insurer or enterprise gets a security questionnaire before the deal closes: 50 to 200 questions, often the CSA CAIQ. The security lead or sales engineer spends 20 to 40 hours per questionnaire finding the right paragraph in the policies, copying last year's answers, and hoping nothing changed. A wrong answer is a contractual statement to a bank. Today this is spreadsheets and Ctrl+F, or a $50k+/year RFP tool that still leaves the checking to a human and cannot tell you which of last year's answers are now wrong.
 
-Attest turns a questionnaire into cited, risk-flagged draft answers in seconds, using only the vendor's own evidence. Upload the CAIQ or the customer's spreadsheet; every question gets an answer with citations to named documents, a Yes/No verdict, a confidence score and a status: ready, needs approval (incidents, liability, indemnities, audit rights, changed practice), or no evidence (routed to a human instead of invented). The reviewer approves or edits, then exports.
+TenderScale answers a questionnaire from the company's own policies and nothing else. For every question it returns Yes / No / Unknown, a two-sentence comment, and the exact policy section and version with a verbatim quote that the code verifies against the source. Two policies that disagree are flagged with both values side by side. A practice that changed since last year's answer is flagged. A question no policy covers is refused, not invented. Rerun after a policy update and it shows exactly which answers changed and why.
 
-Our demo customer is Personivo B.V., a 25-person HR SaaS vendor in Utrecht selling to banks: a real CAIQ v4.1 with 50 questions, answered from three policies and last year's questionnaire, scored against a held-out answer key. Verdicts are 94% correct, key facts 92% correct, one invented fact in 50, and 6 of 8 deliberate traps caught, in 8 seconds for about 2 cents.
+Our customer is Personivo B.V., a 25-person HR SaaS in Utrecht selling to banks: three policies, last year's questionnaire, and a fresh 50-question CAIQ v4.1 with a held-out answer key. Result: 49 of 50 answers correct, 47 of 50 flags correct, 0 invented numbers, 100% of quotes verified, in 20 seconds for $0.023.
 
-The category already has budget owners and proven willingness to pay; the wedge is the mid-market vendor who cannot justify a $50k tool but loses deals to slow questionnaires. Pricing at €500 to €2,000 per month per team pays back on one won deal, and the open-model cost structure (cents per questionnaire) leaves room for usage-based pricing at >80% gross margin.
+Questionnaire software already has budget owners; the wedge is the mid-market vendor for whom a slow questionnaire is a lost deal and a wrong one is a liability. €500–2,000 per month per team pays back on one contract; at cents per questionnaire the margin supports usage pricing. Expansion: RFPs, due-diligence questionnaires, and the buyer's side of the same table.
 
 ## Models and Token Factory use
 
-Everything in the product path runs on Nebius Token Factory through its OpenAI-compatible API, in the EU, with zero retention.
+Everything in the pipeline runs on Nebius Token Factory (OpenAI-compatible API, EU). No closed model anywhere in the product.
 
-- **Qwen/Qwen3-235B-A22B-Instruct-2507** — drafting. A non-reasoning MoE (22B active of 235B): no hidden thinking tokens, so time-to-first-token is stable enough to demo live. Evidence-only prompt, one question per call, 50 calls streamed in parallel over server-sent events; each answer carries citations, a verdict, a confidence and a flag. It also writes the prospect brief from Tavily results.
-- **Qwen/Qwen3-235B-A22B-Instruct-2507** — triage, same model with a classification prompt (category, risk), 5 questions per call, plain JSON. We started triage on Qwen3-30B-A3B and measured it slower on this endpoint (3.6s vs 1.8s per call), with JSON-schema mode adding ~2.5s; so triage moved. Measured, then changed.
-- **Qwen/Qwen3-Embedding-8B** — retrieval. 4096-dim embeddings over policy and past-answer passages, held in a hot in-memory index (sub-millisecond cosine search, top-6 plus the best matching past answer so a changed practice is always visible).
-- **Tavily** — prospect brief (recent news about the customer) generated in parallel, never blocking answers.
-- Closed models are not used in the product. A closed model would be the natural benchmark baseline; on the day no closed-model key was available, so the closed comparison is at list price for the identical token volume, and the blind judge is DeepSeek-V4-Pro on Nebius (not a candidate).
+- Qwen/Qwen3-30B-A3B-Instruct-2507 — source selection (small tier). Reads the shortlisted policy sections for a question and returns the sections that contain the answer, the coverage (covered / partial / none) and a category. Measured 1.1 s median at 50 concurrent calls; the 235B as selector degraded to 13 s under the same load, gemma-3-27b had a tail of minutes.
+- Qwen/Qwen3-235B-A22B-Instruct-2507 — answer writing (large tier). Yes / No / Unknown, comment, verbatim quotes, conflicts between sections, and whether last year's answer is still consistent. Non-reasoning MoE, 22B active: no hidden thinking tokens, predictable latency; scored best in a blind quality matrix against gpt-oss-120b and DeepSeek-V4-Flash.
+- Qwen/Qwen3-Embedding-8B — cosine shortlist of sections and past answers so each selection call stays at ~1.5K tokens.
+- Around the models, in code: quote check (every quote must appear in the cited section), number check (every number in the comment must be backed by a quote), Yes without a source becomes Unknown, and deterministic red / orange / green flags.
+- Closed models: used only as the benchmark baseline through Vercel AI Gateway when a key is available; on the day the closed column was not run, so the cost comparison is at list price for the identical token volume.
 
 ## Measurable model advantage
 
-Baseline 1, the real one: manual work, 20–40 hours per questionnaire. Baseline 2: closed models at public list prices for the identical measured token volume (89,681 in / 7,374 out per questionnaire).
+Baseline 1: the human, 20–40 hours per questionnaire. Baseline 2: the same pipeline on a closed model at list price for the measured token volume (119,165 in / 11,557 out).
 
-Ground truth, Personivo CAIQ v4.1, 50 questions, answer key never shown to the pipeline: verdict correct 94%, expected flag correct 92%, key facts correct 92%, all three correct 86%, invented facts 1 of 50, traps caught 6 of 8 (outdated past answers, contradicting policies, uncovered topics, an honest "No"). Wall-clock 7.9 s, cost $0.023.
+Scored against a held-out answer key the pipeline never sees (Personivo CAIQ v4.1, 50 questions, 8 deliberate traps): answers correct 49/50, flags correct 47/50, invented numbers 0, key facts covered (judge) 41/50, last year's answer matched 24/30, average score 0.89. Wall-clock 20.3 s. Cost $0.023 (€0.021) versus $0.26 on GPT-5 at list price, 11× cheaper, and the data never leaves the EU.
 
-Model selection, same pipeline for every candidate on a 50-question assessment, blind-graded 1–5: Qwen3-235B-A22B 6.0 s wall, 1.68 s first token, $0.022, quality 4.21; Qwen3-30B-A3B 6.4 s, 2.02 s, $0.012, 4.27; gpt-oss-120b 4.1 s, $0.016, 2.57; DeepSeek-V4-Flash 19.5 s, $0.016, 2.87. The 235B was chosen for first-token latency and groundedness at equal quality.
-
-Cost: $0.023 per questionnaire versus $0.19 on GPT-5 and $0.30 on GPT-4o at list price, 8–13× cheaper, for a task that used to cost 20–40 hours of a senior engineer.
-
-Control: EU inference with zero retention, per-stage model routing, and a fine-tuning path on approved answers that no closed API offers. Full tables and charts: https://hackathon-ten-zeta-43.vercel.app/benchmark and `docs/results.md`.
+Model selection was measured, not assumed: selector latency under load (30B 1.1 s vs 235B 13 s vs gemma minutes) and a blind-judged writer matrix (Qwen3-235B 4.21/5 vs gpt-oss-120b 2.57 vs DeepSeek-V4-Flash 2.87, 3× slower). Details: MODELS.md, benchmark/benchmark.md, the filled score sheet, and /benchmark.
 
 ## Responsible design
 
-Answers are drafted only from retrieved evidence; a question the knowledge base does not cover is marked "No evidence" and routed to a person instead of being invented (2 of 2 uncovered questions caught). Anything that commits the company or reveals history (incidents, liability, indemnities, audit rights, changed practices, conflicting policies) is flagged "Needs approval" and cannot be exported as approved without a human. Every answer is editable. Inference runs in the EU on Nebius with zero retention; nothing is stored server-side, a run lives in the reviewer's browser until they export it.
+Every answer cites a verbatim quote and the code verifies it against the section; no answer without a source, so red questions are never answered; last year's answers never override the current policy; the answer key is never in the pipeline path; inference on Nebius in the EU with no closed model in the pipeline; the export carries the flags so a human sees what needs review before anything is sent.

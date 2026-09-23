@@ -13,6 +13,7 @@ export function diffRuns(previous: Answer[], current: Answer[]): Change[] {
     if (p.flag !== a.flag) reasons.push(`flag ${p.flag} → ${a.flag}`);
     const ph = new Map(p.sources.map((s) => [s.section_id, s.text_hash]));
     for (const s of a.sources) { const h = ph.get(s.section_id); if (h && h !== s.text_hash) reasons.push(`${s.section_id} text changed (v${p.sources.find((x) => x.section_id === s.section_id)?.version} → v${s.version})`); }
-    return { question_id: a.question_id, changed: reasons.length > 0, reasons, previous: { answer: p.answer, comment: p.comment, flag: p.flag, sources: p.sources } };
+    const unique = [...new Set(reasons)];
+    return { question_id: a.question_id, changed: unique.length > 0, reasons: unique, previous: { answer: p.answer, comment: p.comment, flag: p.flag, sources: p.sources } };
   });
 }
