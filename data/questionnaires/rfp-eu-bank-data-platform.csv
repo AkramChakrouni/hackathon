@@ -1,0 +1,19 @@
+id,section,question
+R01,Company & Commercial,Provide an overview of your company including ownership structure and financial stability and number of customers in the financial services sector.
+R02,Company & Commercial,Describe your pricing model and standard contract terms including term length and payment terms.
+R03,Company & Commercial,What is your standard limitation of liability and are you willing to negotiate it for a regulated financial institution?
+R04,Company & Commercial,Describe your termination provisions and the assistance you provide on exit including data return and deletion.
+R05,Company & Commercial,Confirm the insurance coverage you hold and provide limits.
+R06,Functional & Architecture,Describe the platform architecture including how data is ingested and modelled and served to end users.
+R07,Functional & Architecture,Which data sources and connectors are supported out of the box and how are new connectors added?
+R08,Functional & Architecture,Describe the multi-tenancy model and the technical controls that isolate our data from other tenants.
+R09,Functional & Architecture,Can the platform be hosted exclusively within the EU and can you commit that no data leaves the EU?
+R10,Functional & Architecture,Describe the APIs available for integration with our existing data warehouse and reporting tools.
+R11,Functional & Architecture,Does the platform include AI or natural-language features and how is their use governed?
+R12,Security,Which security certifications do you hold and can you provide the reports?
+R13,Security,Describe encryption of data at rest and in transit and how encryption keys are managed.
+R14,Security,Describe identity and access management including SSO and MFA and role-based access control and audit logging.
+R15,Security,Summarise the findings of your most recent penetration test and your vulnerability management SLAs.
+R16,Support & SLA,What availability SLA do you offer and what remedies apply if it is not met?
+R17,Support & SLA,Describe your support model including hours of coverage and response times by severity.
+R18,Support & SLA,What are your disaster recovery objectives and when was disaster recovery last tested?

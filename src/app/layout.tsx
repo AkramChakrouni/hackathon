@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { MODELS } from "@/lib/nebius";
 import "./globals.css";
 
 const sans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <span className="inline-block h-2.5 w-2.5 rounded-sm bg-accent shadow-[0_0_12px_var(--color-accent)]" />
             Attest
             <span className="ml-2 rounded border border-line px-1.5 py-0.5 font-mono text-[10px] font-normal text-mute">
-              Nebius Token Factory · Llama 3.3 70B · Llama 3.1 8B · bge-en-icl
+              Nebius Token Factory · {[MODELS.synthesizer, MODELS.classifier, MODELS.embedding].map((m) => m.split("/")[1]).join(" · ")}
             </span>
           </Link>
           <nav className="flex gap-5 text-mute">

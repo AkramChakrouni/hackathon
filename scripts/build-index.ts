@@ -15,6 +15,6 @@ async function main() {
     process.stdout.write(`\r${Math.min(i + 32, chunks.length)}/${chunks.length}`);
   }
   console.log(`\nembedded in ${Date.now() - t0}ms, dims=${chunks[0].embedding!.length}`);
-  fs.writeFileSync(path.join("data", "index.json"), JSON.stringify(chunks));
+  fs.writeFileSync(path.join("data", "index.json"), JSON.stringify(chunks.map((c) => ({ ...c, embedding: c.embedding!.map((x) => Number(x.toFixed(5))) }))));
 }
 main().catch((e) => { console.error(e); process.exit(1); });

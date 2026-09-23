@@ -4,30 +4,40 @@ import type { Engine } from "./types";
 export const NEBIUS_URL = "https://api.tokenfactory.nebius.com/v1/";
 
 export const MODELS = {
-  classifier: process.env.NEBIUS_CLASSIFIER ?? "meta-llama/Meta-Llama-3.1-8B-Instruct-fast",
-  synthesizer: process.env.NEBIUS_SYNTHESIZER ?? "meta-llama/Llama-3.3-70B-Instruct-fast",
-  embedding: process.env.NEBIUS_EMBEDDING ?? "BAAI/bge-en-icl",
+  classifier: process.env.NEBIUS_CLASSIFIER ?? "Qwen/Qwen3-235B-A22B-Instruct-2507" /* measured: the 3B-active endpoint answered slower (3.6s vs 1.8s), see /benchmark */,
+  synthesizer: process.env.NEBIUS_SYNTHESIZER ?? "Qwen/Qwen3-235B-A22B-Instruct-2507",
+  embedding: process.env.NEBIUS_EMBEDDING ?? "Qwen/Qwen3-Embedding-8B",
 };
 
 /** USD per 1M tokens [input, output]. Nebius list prices; closed models at public list prices. */
 export const PRICES: Record<string, [number, number]> = {
-  "meta-llama/Meta-Llama-3.1-8B-Instruct-fast": [0.03, 0.09],
-  "meta-llama/Meta-Llama-3.1-8B-Instruct": [0.02, 0.06],
-  "meta-llama/Llama-3.3-70B-Instruct-fast": [0.25, 0.75],
-  "meta-llama/Llama-3.3-70B-Instruct": [0.13, 0.4],
-  "Qwen/Qwen3-30B-A3B-Instruct-2507": [0.1, 0.3],
+  // Nebius Token Factory list prices (from /v1/models?verbose=true, 23 Sep 2026)
   "Qwen/Qwen3-235B-A22B-Instruct-2507": [0.2, 0.6],
+  "Qwen/Qwen3-30B-A3B-Instruct-2507": [0.1, 0.3],
+  "Qwen/Qwen3-Embedding-8B": [0.01, 0],
   "openai/gpt-oss-120b": [0.15, 0.6],
-  "BAAI/bge-en-icl": [0.01, 0],
+  "deepseek-ai/DeepSeek-V4-Flash-0731": [0.14, 0.28],
+  "google/gemma-3-27b-it": [0.1, 0.3],
+  "zai-org/GLM-5.3-Flash": [0.15, 0.5],
+  // closed models, public list prices (refreshed live by the benchmark)
   "openai/gpt-4o": [2.5, 10],
-  "gpt-4o": [2.5, 10],
   "openai/gpt-4.1": [2, 8],
-  "gpt-4.1": [2, 8],
+  "openai/gpt-5": [1.25, 10],
   "anthropic/claude-sonnet-4.5": [3, 15],
-  "claude-sonnet-4-5": [3, 15],
 };
 
-export const BASELINE_MODEL = process.env.BASELINE_MODEL ?? "openai/gpt-4o";
+/** Prices and the closed baseline id are refreshed by `npm run benchmark` (data/pricing.json) from the providers' live model lists. */
+function dynamic(): { prices: Record<string, [number, number]>; baseline?: string } {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("node:fs") as typeof import("node:fs");
+    return JSON.parse(fs.readFileSync(`${process.cwd()}/data/pricing.json`, "utf8"));
+  } catch { return { prices: {} }; }
+}
+const DYN = dynamic();
+Object.assign(PRICES, DYN.prices);
+
+export const BASELINE_MODEL = process.env.BASELINE_MODEL ?? DYN.baseline ?? "openai/gpt-4o";
 
 export function price(model: string, input: number, output: number) {
   const p = PRICES[model] ?? [0, 0];
@@ -41,19 +51,19 @@ export function nebiusEngine(): Engine {
     apiKey: process.env.NEBIUS_API_KEY ?? "",
     classifier: MODELS.classifier,
     synthesizer: MODELS.synthesizer,
-    synthBatch: Number(process.env.SYNTH_BATCH ?? 2),
+    synthBatch: Number(process.env.SYNTH_BATCH ?? 1),
   };
 }
 
 /** Closed-model baseline through an OpenAI-compatible endpoint (Vercel AI Gateway by default). */
-export function baselineEngine(): Engine {
+export function baselineEngine(model = BASELINE_MODEL): Engine {
   return {
     name: "baseline",
     baseURL: process.env.BASELINE_BASE_URL ?? "https://ai-gateway.vercel.sh/v1",
     apiKey: process.env.BASELINE_API_KEY ?? process.env.AI_GATEWAY_API_KEY ?? "",
-    classifier: BASELINE_MODEL,
-    synthesizer: BASELINE_MODEL,
-    synthBatch: Number(process.env.SYNTH_BATCH ?? 2),
+    classifier: model,
+    synthesizer: model,
+    synthBatch: Number(process.env.SYNTH_BATCH ?? 1),
   };
 }
 

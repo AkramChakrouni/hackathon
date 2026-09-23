@@ -1,0 +1,51 @@
+id,section,question
+Q01,Company,Provide a brief overview of your company including year founded and number of employees.
+Q02,Company,Who is accountable for information security within your organisation and to whom do they report?
+Q03,Company,Describe your financial position and confirm whether you have any outstanding debt or pending litigation.
+Q04,Certifications & Compliance,Do you hold ISO/IEC 27001 certification? Provide certificate number and scope.
+Q05,Certifications & Compliance,Do you have a current SOC 2 Type II report? State the audit period and any exceptions noted.
+Q06,Certifications & Compliance,Do you hold TISAX assessment results?
+Q07,Certifications & Compliance,Are you PCI DSS compliant or do you process cardholder data on our behalf?
+Q08,Certifications & Compliance,Do you hold any other certifications or attestations (e.g. Cyber Essentials Plus or ISO 27017/27018)?
+Q09,Certifications & Compliance,"Have you experienced any security incidents or data breaches in the last 36 months? Provide details, including root cause and remediation."
+Q10,Data Security & Encryption,Describe how customer data is encrypted at rest including algorithms and key management.
+Q11,Data Security & Encryption,Describe how data is encrypted in transit and which TLS versions are supported.
+Q12,Data Security & Encryption,Do you use FIPS 140-2 validated cryptographic modules for encryption of customer data?
+Q13,Data Security & Encryption,Can customers bring their own encryption keys (BYOK) or manage their own keys (CMK)?
+Q14,Data Security & Encryption,How is customer data logically segregated from other tenants?
+Q15,Data Security & Encryption,In which geographic regions is our data stored and processed? Can we restrict processing to the EU?
+Q16,Data Security & Encryption,How are secrets and credentials (e.g. API keys and database passwords) stored and rotated?
+Q17,Identity & Access,Do you support single sign-on via SAML 2.0 or OIDC and automated provisioning via SCIM?
+Q18,Identity & Access,Is multi-factor authentication enforced for your employees and available for customers?
+Q19,Identity & Access,Describe your role-based access control model within the product.
+Q20,Identity & Access,How is privileged access to production systems controlled and monitored?
+Q21,Identity & Access,How often are access rights reviewed and how quickly is access revoked upon termination?
+Q22,Identity & Access,Are shared or generic accounts used in any environment?
+Q23,Infrastructure & Network,Describe your hosting environment including cloud provider and regions used.
+Q24,Infrastructure & Network,Describe network segmentation and controls protecting production systems.
+Q25,Infrastructure & Network,What web application firewall and DDoS protection do you use?
+Q26,Infrastructure & Network,Do you have intrusion detection or prevention systems in place?
+Q27,Infrastructure & Network,Can access to your service be restricted to specific IP addresses?
+Q28,Application Security & SDLC,Describe your secure software development lifecycle including code review and CI security gates.
+Q29,Application Security & SDLC,What is your vulnerability management process and what are your remediation SLAs by severity?
+Q30,Application Security & SDLC,When was your last third-party penetration test and what were the results? Can the report be shared?
+Q31,Application Security & SDLC,Describe your change management process including approval for high-risk changes and rollback capability.
+Q32,Application Security & SDLC,Do you offer source code escrow?
+Q33,Incident Management & Business Continuity,Do you have a documented incident response plan and how often is it tested?
+Q34,Incident Management & Business Continuity,Within what timeframe will you notify us of a security incident affecting our data?
+Q35,Incident Management & Business Continuity,What are your RPO and RTO targets and when were they last tested?
+Q36,Incident Management & Business Continuity,Describe your backup strategy including frequency and retention and encryption.
+Q37,Incident Management & Business Continuity,Do you have a business continuity plan covering loss of key personnel and premises and suppliers?
+Q38,Incident Management & Business Continuity,Describe your logging and monitoring capabilities and log retention period.
+Q39,Privacy & GDPR,Have you appointed a Data Protection Officer? Provide contact details.
+Q40,Privacy & GDPR,Do you provide a GDPR-compliant Data Processing Agreement including Standard Contractual Clauses?
+Q41,Privacy & GDPR,List all subprocessors that will have access to our data and their locations.
+Q42,Privacy & GDPR,How will we be notified of changes to your subprocessors and can we object?
+Q43,Privacy & GDPR,How is customer data deleted upon termination and within what timeframe?
+Q44,Privacy & GDPR,Do you use customer data for any secondary purposes including analytics or model training?
+Q45,Legal & Commercial,Will you accept unlimited liability for data breaches?
+Q46,Legal & Commercial,Describe the indemnification you provide including for IP infringement and data breaches.
+Q47,Legal & Commercial,Do we have the right to audit your security controls and how frequently?
+Q48,Legal & Commercial,What insurance coverage do you maintain (cyber liability and professional indemnity) and with what limits?
+Q49,AI & Emerging Tech,Do you use artificial intelligence or machine learning in your service? Describe the models used and where they are hosted.
+Q50,AI & Emerging Tech,Can AI features be disabled for our tenant and how are AI inputs and outputs logged and retained?

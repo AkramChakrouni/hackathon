@@ -1,0 +1,26 @@
+---
+description: AI Innovate Amsterdam stack — how services are wired
+alwaysApply: true
+---
+
+# Stack wiring
+
+## Supabase (primary DB)
+
+- Project ref: `vtbwfuydjhadejqfdtce`
+- Org: AkramChak (MCP-authenticated)
+- Prefer **Supabase MCP** (`apply_migration`, `execute_sql`, `list_tables`) for schema changes from this agent.
+- Local clients: `src/lib/supabase/{client,server,proxy}.ts`
+- Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` (never commit)
+- Enable RLS on every `public` table; follow the Supabase skill security checklist
+
+## Git
+
+- Single author only — see `no-coauthors` rule
+- Remote: `https://github.com/AkramChakrouni/hackathon.git`
+
+## Other sponsor tools (credentials are manual)
+
+- **Vercel** — AI Gateway + hosting (`vercel login` required once)
+- **Modal** — GPU/Python (`modal token new` after redeeming credits)
+- **n8n / ElevenLabs / Nebius / Miro** — redeem from `provided_files/`, store keys in `.env.local`

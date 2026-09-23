@@ -1,4 +1,4 @@
-import { client, embed, price } from "./nebius";
+import { BASELINE_MODEL, MODELS, client, embed, price } from "./nebius";
 import { classifyPrompt, synthesisPrompt, briefPrompt, CATEGORIES, type EvidenceBlock } from "./prompts";
 import { search, chunkById } from "./retrieval";
 import type { Answer, Category, Citation, Engine, Event, Flag, Metrics, Question, Risk, Usage } from "./types";
@@ -30,7 +30,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
   const metrics = (): Metrics => {
     const cost = usage.reduce((s, u) => s + u.cost, 0);
     // What the identical token volume would cost on the closed baseline (list price).
-    const baselineCost = usage.filter((u) => !u.model.startsWith("BAAI")).reduce((s, u) => s + price(process.env.BASELINE_MODEL ?? "openai/gpt-4o", u.input, u.output), 0);
+    const baselineCost = usage.filter((u) => u.model !== MODELS.embedding).reduce((s, u) => s + price(BASELINE_MODEL, u.input, u.output), 0);
     return { elapsedMs: Date.now() - t0, usage, cost, baselineCost, done: answers.size, total, flagged: [...answers.values()].filter((a) => a.flag !== "none").length };
   };
 
@@ -41,21 +41,22 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
   emit({ type: "stage", stage: "retrieve", status: "start" });
 
   const classify = Promise.all(
-    chunked(o.questions, 10).map(async (batch) => {
+    chunked(o.questions, 5).map(async (batch) => {
       const res = await oa.chat.completions.create({
         model: o.engine.classifier,
         messages: classifyPrompt(batch),
-        response_format: { type: "json_object" },
         temperature: 0,
-        max_tokens: 900,
+        max_tokens: 400,
       }, { signal: o.signal });
       addUsage(o.engine.classifier, res.usage?.prompt_tokens ?? 0, res.usage?.completion_tokens ?? 0);
       let items: { id: string; category: string; risk: string; reason: string }[] = [];
-      try { items = JSON.parse(res.choices[0].message.content ?? "{}").items ?? []; } catch { /* tolerate */ }
+      try { items = JSON.parse((res.choices[0].message.content ?? "{}").replace(/^[\s\S]*?(\{)/, "$1").replace(/\}[^}]*$/, "}")).items ?? []; } catch { /* tolerate */ }
       for (const q of batch) {
         const it = items.find((x) => x.id === q.id);
         const category = (CATEGORIES as readonly string[]).includes(it?.category ?? "") ? (it!.category as Category) : "security";
-        const risk = (["low", "medium", "high"].includes(it?.risk ?? "") ? it!.risk : "low") as Risk;
+        let risk = (["low", "medium", "high"].includes(it?.risk ?? "") ? it!.risk : "low") as Risk;
+        // Only commitments and history need a human: legal / commercial / incident. Controls questions are at most medium.
+        if (risk === "high" && !["legal", "commercial", "incident"].includes(category)) risk = "medium";
         classes[q.id] = { category, risk, reason: it?.reason ?? "" };
         emit({ type: "classified", id: q.id, category, risk, reason: it?.reason ?? "" });
       }
@@ -63,8 +64,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
   ).then(() => emit({ type: "stage", stage: "classify", status: "done", ms: Date.now() - t0 }));
 
   const retrieve = (async () => {
-    const vectors = await embed(o.questions.map((q) => q.text));
-    addUsage("BAAI/bge-en-icl", o.questions.reduce((s, q) => s + Math.ceil(q.text.length / 4), 0), 0);
+    const vectors = await embedCached(o.questions.map((q) => q.text), addUsage);
     const cites = new Map<string, Citation[]>();
     o.questions.forEach((q, i) => {
       const c = search(vectors[i], o.topK ?? 4);
@@ -82,9 +82,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
 
   // ── Stage 3: synthesis, streamed, N questions per call, all calls in parallel ──
   emit({ type: "stage", stage: "synthesize", status: "start" });
-  const highRisk = new Set<string>();
-  await classify.catch(() => {});
-  for (const [id, c] of Object.entries(classes)) if (c.risk === "high") highRisk.add(id);
+  const triage = classify.catch(() => {});
 
   const batches = chunked(o.questions, Math.max(1, o.engine.synthBatch));
   let tick: ReturnType<typeof setInterval> | undefined;
@@ -101,7 +99,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
       model: o.engine.synthesizer,
       messages: synthesisPrompt(o.company, o.prospect, blocks),
       temperature: 0.2,
-      max_tokens: 260 * batch.length + 60,
+      max_tokens: 220 * batch.length + 40,
       stream: true,
       stream_options: { include_usage: true },
     }, { signal: o.signal });
@@ -114,17 +112,19 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     }
     parser.end();
     const latencyMs = Date.now() - started;
+    await triage; // triage is always faster than drafting; only the final flag depends on it
     for (const q of batch) {
       const r = parser.result(q.id);
       const qc = cites.get(q.id) ?? [];
       const used = r.sources.length ? r.sources.filter((n) => n >= 1 && n <= qc.length).map((n) => qc[n - 1]) : qc.slice(0, 2);
       let flag: Flag = r.flag;
-      if (highRisk.has(q.id) && flag === "none") flag = "needs_approval";
+      if (classes[q.id]?.risk === "high" && flag === "none") flag = "needs_approval";
       if ((qc[0]?.score ?? 0) < 0.35 && flag === "none") flag = "no_evidence";
       const a: Answer = {
         id: q.id,
         text: r.answer.trim() || "No answer produced — needs SME input.",
-        confidence: Math.max(0, Math.min(1, isNaN(r.confidence) ? 0.5 : r.confidence)),
+        // model self-report blended with retrieval strength so the bar actually separates well-covered from thin evidence
+        confidence: Number((0.6 * Math.max(0, Math.min(1, isNaN(r.confidence) ? 0.5 : r.confidence)) + 0.4 * Math.max(0, Math.min(1, ((qc[0]?.score ?? 0) - 0.4) / 0.35))).toFixed(2)),
         citations: used,
         flag,
         reason: flag === "needs_approval" ? (classes[q.id]?.reason || "Commits the company; approval required") : flag === "no_evidence" ? "Not covered by the knowledge base" : undefined,
@@ -141,6 +141,18 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
   const m = metrics();
   emit({ type: "metrics", metrics: m });
   return { answers: o.questions.map((q) => answers.get(q.id)!).filter(Boolean), metrics: m, classes };
+}
+
+/** Question embeddings are deterministic: cache them per process so a repeated questionnaire skips the embedding call. */
+const embedCache = new Map<string, number[]>();
+async function embedCached(texts: string[], addUsage: (m: string, i: number, o: number) => void) {
+  const missing = texts.filter((t) => !embedCache.has(t));
+  if (missing.length) {
+    const vecs = await embed(missing);
+    missing.forEach((t, i) => embedCache.set(t, vecs[i]));
+    addUsage(MODELS.embedding, missing.reduce((s, t) => s + Math.ceil(t.length / 4), 0), 0);
+  }
+  return texts.map((t) => embedCache.get(t)!);
 }
 
 async function prospectBrief(prospect: string, oa: ReturnType<typeof client>, model: string, addUsage: (m: string, i: number, o: number) => void, emit: (e: Event) => void) {

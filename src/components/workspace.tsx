@@ -9,9 +9,9 @@ interface Row { q: Question; category?: Category; risk?: Risk; reason?: string; 
 type Stage = "classify" | "retrieve" | "synthesize" | "brief";
 
 const STAGES: { key: Stage; label: string; model: string }[] = [
-  { key: "classify", label: "Triage", model: "8B" },
-  { key: "retrieve", label: "Retrieve", model: "bge" },
-  { key: "synthesize", label: "Draft", model: "70B" },
+  { key: "classify", label: "Triage", model: "235B" },
+  { key: "retrieve", label: "Retrieve", model: "embed" },
+  { key: "synthesize", label: "Draft", model: "235B" },
   { key: "brief", label: "Brief", model: "Tavily" },
 ];
 

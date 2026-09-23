@@ -11,13 +11,13 @@ questionnaire (CSV)            knowledge base (data/knowledge/*.md)
       │                                   │  npm run index → data/index.json
       ▼                                   ▼
  ┌─ triage ──────────────┐   ┌─ retrieve ──────────────────────┐   in parallel
- │ Llama 3.1 8B (fast)   │   │ bge-en-icl embeddings → cosine  │
+ │ Qwen3-235B-A22B (fast)   │   │ Qwen3-Embedding-8B embeddings → cosine  │
  │ category + risk, JSON │   │ top-k over hot in-memory index  │
  └───────────┬───────────┘   └───────────────┬─────────────────┘
              └───────────────┬───────────────┘
                              ▼
               ┌─ draft ───────────────────────────┐   N parallel streams
-              │ Llama 3.3 70B (fast)              │   answer · [n] citations
+              │ Qwen3-235B-A22B (fast)              │   answer · [n] citations
               │ evidence-only, flags no_evidence  │   confidence · flag
               └───────────────┬───────────────────┘
                               ▼

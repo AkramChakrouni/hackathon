@@ -1,0 +1,12 @@
+---
+description: Hackathon commit and authorship rules — no AI co-authors
+alwaysApply: true
+---
+
+# Git authorship
+
+- Commits must be authored **only** as `AkramChakrouni <akram.chakrouni@outlook.com>`.
+- **Never** add `Co-authored-by:` trailers (Cursor, Copilot, Claude, or any other tool).
+- **Never** pass `--author` that is not the user above.
+- When committing via the Shell tool, use a plain message HEREDOC with no trailers.
+- If a hook or tool injects a co-author line, strip it before the commit completes.
