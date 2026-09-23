@@ -46,7 +46,7 @@ const slides = [
   <div class="box hi"><div class="k">verify · code</div><div class="m">no model</div><div class="v">quote in section? numbers quoted? no source → Unknown · deterministic flags</div></div></div>
   <p class="small">50 questions in parallel · 100 calls per questionnaire · streamed to the browser · no closed model anywhere in the pipeline</p>`),
 
-  slide("03 · Measurable model advantage", "Measured, not claimed", `<h2>One questionnaire, 50 questions, answer key never seen by the model</h2>
+  slide("03 · Measurable model advantage", "Measured, not claimed · one questionnaire, 50 questions, answer key never seen by the model", `<div class="dense">
   <table><thead><tr><th></th><th>Security lead</th><th>TenderScale · Nebius</th><th>Closed model</th></tr></thead><tbody>
   <tr><td>Time</td><td>20–40 h</td><td class="nb">${r.seconds.toFixed(0)} s</td><td>${closed ? closed.seconds.toFixed(0) + " s" : "—"}</td></tr>
   <tr><td>Cost</td><td>€${fmt(20 * HOURLY)}–€${fmt(40 * HOURLY)}</td><td class="nb">€${eur.toFixed(3)}</td><td>GPT-5 list price $${gpt5.toFixed(2)} · ${fmt(gpt5 / r.usd)}×</td></tr>
@@ -54,7 +54,7 @@ const slides = [
   <tr><td>Flags correct · invented numbers</td><td>—</td><td class="nb">${r.flagsCorrect} / 50 · ${r.invented}</td><td>${closed ? closed.flagsCorrect + " / 50 · " + closed.invented : "not measured"}</td></tr>
   <tr><td>Quotes verified by code</td><td>manual</td><td class="nb">100%</td><td>—</td></tr>
   <tr><td>Policies leave the EU</td><td>no</td><td class="nb">no</td><td>yes</td></tr></tbody></table>
-  <p class="small">Human time: Loopio RFP benchmark ~30 h/response · €${HOURLY}/h fully loaded · proof: ${URL}/benchmark and benchmark/benchmark.md</p>`),
+  <p class="small">Human time: Loopio RFP benchmark ~30 h/response · €${HOURLY}/h fully loaded · proof: ${URL}/benchmark</p></div>`),
 
   slide("03 · Measurable model advantage", "Why open, why these", `<h2>Chosen on the numbers, on the day</h2>
   <ul class="two"><li><b>Selector</b>: Qwen3-30B 1.1 s median at 50 concurrent calls; the 235B as selector fell to 13 s; gemma-3-27b's tail ran into minutes.</li>
@@ -79,9 +79,10 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>
 :root{--ink:#0b0d10;--panel:#111418;--line:#1f242b;--mute:#8b95a3;--fg:#e6e9ee;--accent:#7dd3fc;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--ink);color:var(--fg);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
 #stage{position:relative;width:100vw;height:100vh}
-section{position:absolute;inset:0;padding:72px 96px;display:none;flex-direction:column;justify-content:center}section.on{display:flex}
-.crit{position:absolute;top:36px;left:96px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-.kicker{font-family:ui-monospace,Menlo,monospace;font-size:22px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:18px}
+section{position:absolute;inset:0;padding:72px 96px;display:none;flex-direction:column;justify-content:center;overflow:hidden}section.on{display:flex}
+.dense table{font-size:26px}.dense td{padding:10px 16px 10px 0}.dense th{font-size:17px}.dense .small{margin-top:14px;font-size:17px}
+.crit{position:absolute;top:30px;left:96px;font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.kicker{font-family:ui-monospace,Menlo,monospace;font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:18px}
 h1{font-size:120px;margin:0;letter-spacing:-.03em}h2{font-size:54px;margin:0 0 28px;letter-spacing:-.02em;line-height:1.1}
 .tag{font-size:38px;line-height:1.3;margin:24px 0 0;color:var(--fg)}.sub{font-size:24px;color:var(--mute);margin-top:32px}
 .title{align-items:flex-start}.mark{width:64px;height:64px;border:5px solid var(--accent);border-radius:50%;position:relative;margin-bottom:40px}.mark:after{content:"";position:absolute;left:26px;top:12px;width:6px;height:32px;background:var(--accent);border-radius:3px}
