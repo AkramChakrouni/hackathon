@@ -9,7 +9,8 @@
     "lint": "eslint",
     "index": "tsx --env-file=.env.local scripts/build-index.ts",
     "benchmark": "tsx --env-file=.env.local scripts/benchmark.ts",
-    "pitch-pack": "tsx scripts/pitch-pack.ts"
+    "pitch-pack": "tsx scripts/pitch-pack.ts",
+    "deck": "tsx scripts/deck.ts"
   },
   "dependencies": {
     "@tavily/core": "^0.7.13",

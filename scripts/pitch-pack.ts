@@ -159,7 +159,7 @@ Model selection was measured, not assumed: selector latency under load (30B 1.1 
 
 ## Responsible design
 
-Every answer cites a verbatim quote and the code verifies it against the section; no answer without a source, so red questions are never answered; last year's answers never override the current policy; the answer key is never in the pipeline path; inference on Nebius in the EU with no closed model in the pipeline; the export carries the flags so a human sees what needs review before anything is sent.
+Personal data: we store none. Policies, past answers and the questionnaire are sent only to Nebius in the EU for inference; a run lives in the reviewer's browser until exported, nothing is kept server-side. Harmful or manipulative input: the model can only quote the policy sections it is given, it has no tools and takes no actions, and any quote that is not found verbatim in the section is dropped by code, so a prompt hidden in a document cannot produce an answer without a real source. When the model is wrong: every answer shows its source one click away, the reviewer edits it before export, red questions are never answered, and the export carries the flags so a human sees what needs review before anything reaches the bank.
 `;
 fs.writeFileSync(path.join("docs", "submission.md"), submission);
 console.log("wrote docs/pitch-pack.md, docs/submission.md and", fs.readdirSync(path.join("docs", "charts")).length, "charts");
