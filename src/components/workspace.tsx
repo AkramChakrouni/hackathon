@@ -1,253 +1,209 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Download, Play, ShieldAlert, Sparkles, TriangleAlert, Upload } from "lucide-react";
-import type { Answer, Category, Citation, Event, Metrics, Question, Risk } from "@/lib/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Download, FileDiff, Play, RefreshCw } from "lucide-react";
+import { diffRuns, type Change } from "@/lib/diff";
+import type { Answer, Event, Flag, PolicySet, Question, RunMeta } from "@/lib/types";
 
-interface QSet { slug: string; name: string; prospect: string; company: string; questions: Question[] }
-interface CompanyInfo { slug: string; name: string; docs: number; chunks: number; dims: number }
-interface Row { q: Question; category?: Category; risk?: Risk; citations?: Citation[]; text: string; answer?: Answer; approved?: boolean; open?: boolean }
-type Stage = "classify" | "retrieve" | "synthesize" | "brief";
-const STAGES: { key: Stage; label: string }[] = [{ key: "classify", label: "Triage" }, { key: "retrieve", label: "Retrieve" }, { key: "synthesize", label: "Draft" }, { key: "brief", label: "Prospect brief" }];
-const IDLE = { classify: { status: "idle" }, retrieve: { status: "idle" }, synthesize: { status: "idle" }, brief: { status: "idle" } } as Record<Stage, { status: "idle" | "run" | "done"; ms?: number }>;
-const usd = (n: number) => (n < 0.01 ? `$${n.toFixed(3)}` : `$${n.toFixed(2)}`);
+export interface Meta {
+  company: string;
+  policies: { short: string; name: string; version: string; effective: string; sections: number }[];
+  updated_policies: { short: string; name: string; version: string; effective: string }[];
+  past_answers: number;
+  questionnaire: { name: string; header: string[]; questions: Question[] };
+  models: { selection: string; writing: string; embedding: string; provider: string };
+}
+type Filter = "all" | Flag | "changed";
+const FLAG = { green: { bar: "bg-ok", text: "text-ok", label: "Ready" }, orange: { bar: "bg-warn", text: "text-warn", label: "Review" }, red: { bar: "bg-bad", text: "text-bad", label: "No source" } } as const;
+const short = (m: string) => m.split("/").pop() ?? m;
+const usd = (n: number) => `$${n.toFixed(n < 0.1 ? 3 : 2)}`;
 
-export function Workspace({ questionnaires, companies, models }: { questionnaires: QSet[]; companies: CompanyInfo[]; models: { classifier: string; synthesizer: string; embedding: string } }) {
-  const [sel, setSel] = useState<QSet>(questionnaires[0] ?? { slug: "custom:empty", name: "No questionnaire loaded", prospect: "", company: companies[0]?.slug ?? "", questions: [] });
-  const [rows, setRows] = useState<Row[]>(() => sel.questions.map((q) => ({ q, text: "" })));
-  const [stages, setStages] = useState(IDLE);
-  const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [brief, setBrief] = useState<{ prospect: string; summary: string; sources: { title: string; url: string }[] } | null>(null);
+export function Workspace({ meta }: { meta: Meta }) {
+  const [policySet, setPolicySet] = useState<PolicySet>("current");
+  const [answers, setAnswers] = useState<Map<string, Answer>>(new Map());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [run, setRun] = useState<RunMeta | null>(null);
+  const [prev, setPrev] = useState<{ run: RunMeta; answers: Answer[] } | null>(null);
+  const [changes, setChanges] = useState<Map<string, Change>>(new Map());
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [finalMs, setFinalMs] = useState<number | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const t0 = useRef(0);
   const abort = useRef<AbortController | null>(null);
-  const company = companies.find((c) => c.slug === sel.company) ?? companies[0] ?? { slug: "", name: "—", docs: 0, chunks: 0, dims: 0 };
+  const questions = meta.questionnaire.questions;
 
-  const pick = (q: QSet) => { abort.current?.abort(); setSel(q); setRows(q.questions.map((x) => ({ q: x, text: "" }))); setMetrics(null); setBrief(null); setFinalMs(null); setElapsed(0); setError(null); setStages(IDLE); };
+  useEffect(() => { if (!running) return; const id = setInterval(() => setElapsed(performance.now() - t0.current), 33); return () => clearInterval(id); }, [running]);
 
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => setElapsed(performance.now() - t0.current), 33);
-    return () => clearInterval(id);
-  }, [running]);
-
-  const patch = useCallback((id: string, f: (r: Row) => Row) => setRows((rs) => rs.map((r) => (r.q.id === id ? f(r) : r))), []);
-
-  const handle = (e: Event) => {
-    switch (e.type) {
-      case "stage": setStages((s) => ({ ...s, [e.stage]: { status: e.status === "start" ? "run" : "done", ms: e.ms } })); break;
-      case "classified": patch(e.id, (r) => ({ ...r, category: e.category, risk: e.risk })); break;
-      case "retrieved": patch(e.id, (r) => ({ ...r, citations: e.citations })); break;
-      case "delta": patch(e.id, (r) => ({ ...r, text: r.text + e.text })); break;
-      case "answer": patch(e.answer.id, (r) => ({ ...r, answer: e.answer, text: e.answer.text, citations: e.answer.citations.length ? e.answer.citations : r.citations })); break;
-      case "flag": patch(e.id, (r) => (r.answer ? { ...r, answer: { ...r.answer, flag: e.flag, reason: e.reason } } : r)); break;
-      case "brief": setBrief({ prospect: e.prospect, summary: e.summary, sources: e.sources }); break;
-      case "metrics": case "done": setMetrics(e.metrics); break;
-      case "error": setError(e.message); break;
-    }
-  };
-
-  const run = async () => {
-    pick(sel);
-    setRunning(true);
-    t0.current = performance.now();
-    const ac = new AbortController();
-    abort.current = ac;
+  const start = async () => {
+    abort.current?.abort();
+    if (run?.status === "done") setPrev({ run, answers: questions.map((q) => answers.get(q.id)!).filter(Boolean) });
+    setAnswers(new Map()); setSelected(new Set()); setChanges(new Map()); setRun(null); setError(null); setOpen(null); setFilter("all");
+    setRunning(true); t0.current = performance.now();
+    const ac = new AbortController(); abort.current = ac;
     try {
-      const custom = sel.slug.startsWith("custom:");
-      const res = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug: custom ? undefined : sel.slug, questions: custom ? sel.questions : undefined, prospect: sel.prospect, company: sel.company }), signal: ac.signal });
+      const res = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ policy_set: policySet }), signal: ac.signal });
       if (!res.ok || !res.body) throw new Error(await res.text());
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
       for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
+        const { value, done } = await reader.read(); if (done) break;
         buf += dec.decode(value, { stream: true });
         let i: number;
         while ((i = buf.indexOf("\n\n")) >= 0) {
-          const line = buf.slice(0, i).trim();
-          buf = buf.slice(i + 2);
-          if (line.startsWith("data:")) handle(JSON.parse(line.slice(5)) as Event);
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 2);
+          if (!line.startsWith("data:")) continue;
+          const e = JSON.parse(line.slice(5)) as Event;
+          if (e.type === "start" || e.type === "metrics") setRun(e.run);
+          else if (e.type === "selected") setSelected((s) => new Set(s).add(e.question_id));
+          else if (e.type === "answer") setAnswers((m) => new Map(m).set(e.answer.question_id, e.answer));
+          else if (e.type === "done") { setRun(e.run); if (prevRef.current) setChanges(new Map(diffRuns(prevRef.current.answers, e.answers).map((c) => [c.question_id, c]))); }
+          else if (e.type === "error") setError(e.message);
         }
       }
-    } catch (e) {
-      if (!ac.signal.aborted) setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setRunning(false);
-      setFinalMs(performance.now() - t0.current);
-    }
+    } catch (e) { if (!ac.signal.aborted) setError(e instanceof Error ? e.message : String(e)); }
+    finally { setRunning(false); setElapsed(performance.now() - t0.current); }
   };
+  const prevRef = useRef(prev); prevRef.current = prev;
 
-  const done = rows.filter((r) => r.answer).length;
-  const flagged = rows.filter((r) => r.answer && r.answer.flag !== "none").length;
-  const shownMs = finalMs ?? elapsed;
-  const finished = done === rows.length && rows.length > 0 && !running;
+  const rows = useMemo(() => questions.filter((q) => { const a = answers.get(q.id); if (filter === "all") return true; if (filter === "changed") return changes.get(q.id)?.changed; return a?.flag === filter; }), [questions, answers, filter, changes]);
+  const counts = { green: run?.flags.green ?? 0, orange: run?.flags.orange ?? 0, red: run?.flags.red ?? 0, changed: [...changes.values()].filter((c) => c.changed).length };
+  const done = answers.size;
+  const finished = run?.status === "done";
+  const secs = (finished ? run!.duration_ms : elapsed) / 1000;
 
   const exportCsv = () => {
     const esc = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const lines = [["id", "section", "question", "verdict", "answer", "sources", "status"].join(",")];
-    for (const r of rows) lines.push([r.q.id, r.q.section, r.q.text, r.answer?.verdict, r.text, (r.citations ?? []).map((c) => c.title).join("; "), r.approved ? "approved" : r.answer?.flag ?? ""].map(esc).join(","));
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
-    a.download = `${sel.slug}-answers.csv`;
-    a.click();
+    const h = meta.questionnaire.header.map((x) => x.toLowerCase());
+    const head = [...meta.questionnaire.header, "flag", "flag_reason", "sources"];
+    const lines = [head.map(esc).join(",")];
+    questions.forEach((q, i) => {
+      const a = answers.get(q.id);
+      const row = meta.questionnaire.header.map((_, c) => (h[c] === "answer" ? a?.answer ?? "" : h[c] === "comment" ? a?.comment ?? "" : h[c] === "ssrm_ownership" ? a?.ssrm_ownership ?? "" : h[c] === "question" ? q.text : h[c].includes("id") ? q.id : ""));
+      void i; lines.push([...row, a?.flag ?? "", a?.flag_reason ?? "", (a?.sources ?? []).map((s) => `${s.section_id} v${s.version}`).join("; ")].map(esc).join(","));
+    });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })); el.download = "questionnaire_2026_filled.csv"; el.click();
   };
+  const openA = open ? answers.get(open) : undefined;
+  const openQ = open ? questions.find((q) => q.id === open) : undefined;
 
   return (
-    <div className="flex flex-1">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-line p-5 text-sm">
-        <div className="text-[11px] font-medium uppercase tracking-wider text-mute">Company</div>
-        <div className="mt-1 text-lg font-semibold leading-tight">{company.name}</div>
-        <div className="mt-1 text-xs text-mute">{company.docs} documents · {company.chunks} passages indexed</div>
-
-        <div className="mt-8 text-[11px] font-medium uppercase tracking-wider text-mute">Questionnaires</div>
-        <ul className="mt-2 space-y-1">
-          {[...questionnaires, ...(sel.slug.startsWith("custom:") ? [sel] : [])].map((q) => (
-            <li key={q.slug}>
-              <button onClick={() => pick(q)} disabled={running} className={`w-full rounded-md px-3 py-2 text-left transition ${sel.slug === q.slug ? "bg-accent/10 text-fg" : "text-mute hover:bg-panel hover:text-fg"}`}>
-                <div className="font-medium leading-snug">{q.name}</div>
-                <div className="text-[11px] opacity-70">{q.questions.length} questions{q.prospect ? ` · ${q.prospect}` : ""}</div>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-mute hover:bg-panel hover:text-fg">
-          <Upload size={14} /> Upload CSV
-          <input type="file" accept=".csv,text/csv" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const qs = parseCsvClient(await f.text()); if (qs.length) pick({ slug: `custom:${Date.now()}`, name: f.name.replace(/\.csv$/, ""), prospect: "", company: sel.company, questions: qs }); }} />
-        </label>
-
-        <div className="mt-auto pt-6 font-mono text-[10px] leading-relaxed text-mute">
-          {models.synthesizer.split("/")[1]}<br />{models.embedding.split("/")[1]}<br />Nebius Token Factory · EU · zero retention
+    <div className="flex flex-1 flex-col">
+      {/* header */}
+      <div className="flex items-end justify-between gap-6 border-b border-line px-8 py-5">
+        <div>
+          <div className="text-[13px] uppercase tracking-[0.2em] text-mute">{meta.company} · {meta.questionnaire.name}</div>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-tight">{questions.length} questions · {meta.policies.length} policies · {meta.past_answers} past answers</h1>
+          <div className="mt-1 flex flex-wrap gap-x-4 text-[15px] text-mute">{meta.policies.map((p) => <span key={p.short}>{p.short} v{policySet === "updated" && meta.updated_policies.find((u) => u.short === p.short) ? meta.updated_policies.find((u) => u.short === p.short)!.version : p.version}</span>)}</div>
         </div>
-      </aside>
-
-      <main className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-end justify-between gap-6 px-8 pt-7">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{sel.name}</h1>
-            <div className="mt-1 text-sm text-mute">{sel.prospect ? `Sent by ${sel.prospect} · ` : ""}{sel.questions.length} questions</div>
-          </div>
-          <div className="flex items-center gap-2">
-            {finished && <button onClick={exportCsv} className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2.5 text-sm text-mute hover:text-fg"><Download size={14} /> Export</button>}
-            <button onClick={run} disabled={running} className="flex items-center gap-2 rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-ink shadow-[0_0_32px_-6px_var(--color-accent)] transition hover:brightness-110 disabled:opacity-60">
-              <Play size={14} fill="currentColor" /> {running ? "Drafting…" : done ? "Draft again" : "Draft all answers"}
+        <div className="flex items-center gap-3">
+          {meta.updated_policies.length > 0 && (
+            <button onClick={() => setPolicySet((s) => (s === "current" ? "updated" : "current"))} disabled={running} className={`flex items-center gap-2 rounded-md border px-4 py-3 text-[15px] ${policySet === "updated" ? "border-warn/60 bg-warn/10 text-warn" : "border-line text-mute hover:text-fg"}`}>
+              <FileDiff size={16} /> {policySet === "updated" ? `Updated policy loaded (${meta.updated_policies.map((u) => `${u.short} v${u.version}`).join(", ")})` : `Load updated ${meta.updated_policies.map((u) => `${u.short} v${u.version}`).join(", ")}`}
             </button>
-          </div>
+          )}
+          {finished && <button onClick={exportCsv} className="flex items-center gap-2 rounded-md border border-line px-4 py-3 text-[15px] text-mute hover:text-fg"><Download size={16} /> Export CSV</button>}
+          <button onClick={start} disabled={running} className="flex items-center gap-2 rounded-md bg-accent px-6 py-3 text-[16px] font-semibold text-ink shadow-[0_0_40px_-8px_var(--color-accent)] hover:brightness-110 disabled:opacity-60">
+            {running ? <RefreshCw size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />} {running ? "Running…" : finished ? "Run again" : "Run"}
+          </button>
         </div>
+      </div>
 
-        <div className="mt-6 grid grid-cols-4 gap-4 px-8">
-          <Big label="seconds" value={(shownMs / 1000).toFixed(1)} hot={running} />
-          <Big label="answered" value={`${done}/${rows.length}`} />
-          <Big label="need a human" value={String(flagged)} tone={flagged ? "warn" : undefined} />
-          <Big label={metrics ? `vs ${usd(metrics.baselineCost)} on GPT` : "cost"} value={metrics ? usd(metrics.cost) : "—"} tone="ok" />
+      {/* metrics */}
+      <div className="grid grid-cols-5 gap-4 px-8 py-5">
+        <Big label="seconds" value={secs.toFixed(1)} tone={running ? "accent" : undefined} />
+        <Big label="answered" value={`${done} / ${questions.length}`} />
+        <Big label="tokens" value={run ? (run.input_tokens + run.output_tokens).toLocaleString() : "—"} />
+        <Big label={run ? `cost · ${usd(run.baseline_cost_usd)} on a closed model` : "cost"} value={run ? usd(run.cost_usd) : "—"} tone="ok" />
+        <div className="flex items-center gap-4 rounded-md border border-line bg-panel px-5 py-3 text-[16px]">
+          {(["green", "orange", "red"] as Flag[]).map((f) => <span key={f} className={`flex items-center gap-2 ${FLAG[f].text}`}><span className={`h-3 w-3 rounded-sm ${FLAG[f].bar}`} /><span className="font-mono tabular-nums">{counts[f]}</span></span>)}
+          {counts.changed > 0 && <span className="ml-auto text-accent">{counts.changed} changed</span>}
         </div>
+      </div>
 
-        <ol className="mt-4 flex items-center gap-5 px-8 text-xs text-mute">
-          {STAGES.map((s) => { const st = stages[s.key]; return (
-            <li key={s.key} className="flex items-center gap-2">
-              <span className={`h-1.5 w-1.5 rounded-full ${st.status === "done" ? "bg-ok" : st.status === "run" ? "animate-pulse bg-accent" : "bg-line"}`} />
-              <span className={st.status === "idle" ? "" : "text-fg"}>{s.label}</span>
-              {st.status === "done" && st.ms ? <span className="font-mono text-[10px]">{(st.ms / 1000).toFixed(1)}s</span> : null}
-            </li>
-          ); })}
-          {finished && metrics && <li className="ml-auto text-fg">{Math.round(metrics.baselineCost / Math.max(metrics.cost, 1e-9))}× cheaper than GPT at list price · manual: 20–40 h</li>}
-        </ol>
+      {error && <div className="mx-8 mb-3 rounded-md border border-bad/40 bg-bad/10 px-4 py-2 text-[15px] text-bad">{error}</div>}
 
-        {error && <div className="mx-8 mt-4 rounded-md border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">{error}</div>}
+      {/* filters */}
+      <div className="flex items-center gap-2 px-8 pb-3 text-[15px]">
+        {(["all", "green", "orange", "red", ...(counts.changed ? ["changed" as const] : [])] as Filter[]).map((f) => (
+          <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 capitalize ${filter === f ? "bg-panel text-fg ring-1 ring-line" : "text-mute hover:text-fg"}`}>{f === "all" ? "All" : f === "changed" ? "Changed" : FLAG[f].label}{f !== "all" && <span className="ml-1.5 font-mono text-[13px] opacity-70">{f === "changed" ? counts.changed : counts[f]}</span>}</button>
+        ))}
+        {counts.red > 0 && <span className="ml-auto text-[15px] text-mute">Gap list: <span className="text-bad">{counts.red}</span> question{counts.red > 1 ? "s" : ""} no policy covers</span>}
+      </div>
 
-        {brief && (
-          <div className="rise mx-8 mt-5 flex items-start gap-3 rounded-md border border-accent/25 bg-accent/5 px-4 py-3 text-sm">
-            <Sparkles size={14} className="mt-0.5 shrink-0 text-accent" />
-            <div><span className="font-medium text-accent">{brief.prospect} right now</span> <span className="text-mute">· Tavily</span> — <span className="text-fg">{brief.summary}</span></div>
-          </div>
-        )}
-
-        <div className="mt-5 flex-1 overflow-auto px-8 pb-8">
-          <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-10 bg-ink text-left text-[11px] uppercase tracking-wider text-mute">
-              <tr><th className="w-[30%] border-b border-line pb-2 font-medium">Question</th><th className="border-b border-line pb-2 font-medium">Answer</th><th className="w-40 border-b border-line pb-2 font-medium">Status</th></tr>
+      <div className="flex flex-1 overflow-hidden">
+        {/* table */}
+        <div className="flex-1 overflow-auto px-8 pb-8">
+          <table className="w-full table-fixed border-separate border-spacing-0 text-[16px]">
+            <thead className="sticky top-0 z-10 bg-ink text-left text-[13px] uppercase tracking-wider text-mute">
+              <tr><th className="w-3 border-b border-line" /><th className="w-24 border-b border-line py-2 pl-3">ID</th><th className={`${open ? "w-auto" : "w-[34%]"} border-b border-line py-2`}>Question</th><th className="w-28 border-b border-line py-2">Answer</th>{!open && <th className="border-b border-line py-2">Comment</th>}<th className="w-44 border-b border-line py-2">Source</th></tr>
             </thead>
             <tbody>
-              {rows.map((r) => <AnswerRow key={r.q.id} r={r} running={running} onToggle={() => patch(r.q.id, (x) => ({ ...x, open: !x.open }))} onApprove={() => patch(r.q.id, (x) => ({ ...x, approved: !x.approved }))} />)}
+              {rows.map((q) => {
+                const a = answers.get(q.id); const ch = changes.get(q.id);
+                return (
+                  <tr key={q.id} onClick={() => a && setOpen(q.id)} className={`rise cursor-pointer align-top transition hover:bg-panel ${open === q.id ? "bg-panel" : ""} ${!a && running ? (selected.has(q.id) ? "opacity-70" : "opacity-35") : ""}`}>
+                    <td className={`border-b border-line ${a ? FLAG[a.flag].bar : "bg-line"}`} />
+                    <td className="border-b border-line py-3 pl-3 font-mono text-[14px] text-mute">{q.id}{ch?.changed && <div className="mt-1 inline-block rounded bg-accent/15 px-1.5 py-0.5 text-[11px] font-medium uppercase text-accent">changed</div>}</td>
+                    <td className="border-b border-line py-3 pr-4 leading-snug text-fg/90"><span className="line-clamp-2">{q.text}</span></td>
+                    <td className="border-b border-line py-3">{a ? <span className={`rounded px-2 py-0.5 font-mono text-[14px] font-semibold ${a.answer === "Yes" ? "bg-ok/15 text-ok" : a.answer === "No" ? "bg-bad/15 text-bad" : "bg-warn/15 text-warn"}`}>{a.answer}</span> : <span className="text-[14px] text-mute">{selected.has(q.id) ? "writing…" : running ? "selecting…" : ""}</span>}</td>
+                    {!open && <td className="border-b border-line py-3 pr-4 leading-snug text-fg/80"><span className="line-clamp-2">{a?.comment}</span></td>}
+                    <td className="border-b border-line py-3 font-mono text-[13px] text-mute">{a?.sources[0] ? `${a.sources[0].section_id} v${a.sources[0].version}${a.sources.length > 1 ? ` +${a.sources.length - 1}` : ""}` : a ? "—" : ""}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </main>
+
+        {/* answer panel */}
+        {openA && openQ && (
+          <aside className="rise w-[440px] shrink-0 overflow-auto border-l border-line bg-panel px-6 py-5 text-[15px]">
+            <div className="flex items-start justify-between gap-3"><div className="font-mono text-[13px] text-mute">{openQ.id}</div><button onClick={() => setOpen(null)} className="text-mute hover:text-fg">✕</button></div>
+            <div className="mt-2 text-[17px] leading-snug text-fg">{openQ.text}</div>
+            <div className="mt-4 flex items-center gap-3"><span className={`rounded px-2.5 py-1 font-mono text-[15px] font-semibold ${openA.answer === "Yes" ? "bg-ok/15 text-ok" : openA.answer === "No" ? "bg-bad/15 text-bad" : "bg-warn/15 text-warn"}`}>{openA.answer}</span><span className={`flex items-center gap-2 ${FLAG[openA.flag].text}`}><span className={`h-3 w-3 rounded-sm ${FLAG[openA.flag].bar}`} />{FLAG[openA.flag].label}</span><span className="ml-auto font-mono text-[12px] text-mute">{(openA.latency_ms / 1000).toFixed(1)}s</span></div>
+            {openA.flag !== "green" && <div className={`mt-2 text-[14px] ${FLAG[openA.flag].text}`}>{openA.flag_reason}</div>}
+            {changes.get(openQ.id)?.changed && (
+              <div className="mt-4 rounded-md border border-accent/40 bg-accent/5 p-3">
+                <div className="text-[12px] uppercase tracking-wider text-accent">Previous run · {changes.get(openQ.id)!.reasons.join(" · ")}</div>
+                <div className="mt-1 text-fg/80"><span className="font-mono">{changes.get(openQ.id)!.previous?.answer}</span> — {changes.get(openQ.id)!.previous?.comment}</div>
+              </div>
+            )}
+            <p className="mt-4 leading-relaxed text-fg/90">{openA.comment}</p>
+            {openA.flag === "orange" && openA.conflicts.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {[openA.conflicts[0].section_a, openA.conflicts[0].section_b].map((id) => { const s = openA.sources.find((x) => x.section_id === id); return <div key={id} className="rounded-md border border-warn/40 p-3 text-[14px]"><div className="font-mono text-[12px] text-warn">{id}{s ? ` · v${s.version}` : ""}</div><div className="mt-1 text-fg/85">{s?.quote ?? "(see policy)"}</div></div>; })}
+                <div className="col-span-2 text-[13px] text-warn">{openA.conflicts[0].what_differs}</div>
+              </div>
+            )}
+            {openA.flag === "orange" && openA.past_answer && openA.past_answer_consistent === false && (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[14px]">
+                <div className="rounded-md border border-line p-3"><div className="font-mono text-[12px] text-mute">2025 answer · {openA.past_answer.ref}</div><div className="mt-1 text-fg/70">{openA.past_answer.answer}. {openA.past_answer.comment}</div></div>
+                <div className="rounded-md border border-warn/40 p-3"><div className="font-mono text-[12px] text-warn">Current policy · {openA.sources[0]?.section_id} v{openA.sources[0]?.version}</div><div className="mt-1 text-fg/85">{openA.sources[0]?.quote}</div></div>
+              </div>
+            )}
+            {openA.sources.length > 0 && (
+              <div className="mt-5 space-y-2">
+                <div className="text-[12px] uppercase tracking-wider text-mute">Sources · quotes verified against the policy text</div>
+                {openA.sources.map((s, i) => <blockquote key={i} className="rounded-md border-l-2 border-accent bg-ink px-3 py-2 text-[14px] text-fg/85"><div className="mb-1 font-mono text-[12px] text-accent">{s.policy} · {s.section_id} · v{s.version}</div>“{s.quote}”</blockquote>)}
+              </div>
+            )}
+          </aside>
+        )}
+      </div>
+
+      <div className="flex items-center gap-6 border-t border-line px-8 py-2 font-mono text-[12px] text-mute">
+        <span>selection: {short(meta.models.selection)}</span><span>writing: {short(meta.models.writing)}</span><span>embedding: {short(meta.models.embedding)}</span><span className="ml-auto">{meta.models.provider} · EU · no closed model in the pipeline</span>
+      </div>
     </div>
   );
 }
 
-function Big({ label, value, tone, hot }: { label: string; value: string; tone?: "ok" | "warn"; hot?: boolean }) {
-  const c = hot ? "text-accent" : tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : "text-fg";
+function Big({ label, value, tone }: { label: string; value: string; tone?: "ok" | "accent" }) {
   return (
-    <div className="rounded-md border border-line bg-panel px-4 py-3">
-      <div className={`font-mono text-3xl font-semibold tabular-nums leading-none ${c}`}>{value}</div>
-      <div className="mt-1.5 text-[11px] uppercase tracking-wider text-mute">{label}</div>
+    <div className="rounded-md border border-line bg-panel px-5 py-3">
+      <div className={`font-mono text-[34px] font-semibold leading-none tabular-nums ${tone === "ok" ? "text-ok" : tone === "accent" ? "text-accent" : "text-fg"}`}>{value}</div>
+      <div className="mt-1.5 text-[12px] uppercase tracking-wider text-mute">{label}</div>
     </div>
   );
-}
-
-const CAT: Record<string, string> = { company: "text-sky-300", compliance: "text-violet-300", security: "text-emerald-300", access: "text-teal-300", infrastructure: "text-cyan-300", appsec: "text-lime-300", incident: "text-orange-300", privacy: "text-pink-300", legal: "text-red-300", commercial: "text-amber-300", ai: "text-indigo-300" };
-
-function AnswerRow({ r, running, onToggle, onApprove }: { r: Row; running: boolean; onToggle: () => void; onApprove: () => void }) {
-  const a = r.answer;
-  const streaming = !a && r.text.length > 0;
-  const pending = !r.category && !r.citations && !r.text;
-  return (
-    <tr className={`align-top transition ${pending && running ? "opacity-40" : ""}`}>
-      <td className="border-b border-line py-3.5 pr-6">
-        <div className="text-fg/90">{r.q.text}</div>
-        <div className="mt-1 font-mono text-[10px] text-mute">{r.q.id}{r.category && <span className={`rise ml-2 ${CAT[r.category]}`}>{r.category}</span>}</div>
-      </td>
-      <td className="border-b border-line py-3.5 pr-6" onClick={onToggle}>
-        {r.text ? (
-          <p className={`cursor-pointer whitespace-pre-wrap text-fg/90 ${streaming ? "caret" : ""} ${r.open ? "" : "line-clamp-3"}`}>{r.text}</p>
-        ) : (
-          <span className="text-mute">{r.citations ? "evidence found · drafting" : running ? "…" : ""}</span>
-        )}
-        {r.citations && (
-          <div className="rise mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden font-mono text-[10px] text-mute">
-            {r.citations.slice(0, 2).map((c, i) => <span key={c.chunk} className="min-w-0 truncate rounded border border-line px-1.5 py-0.5"><span className="text-accent">[{i + 1}]</span> {c.title.replace(/\s*\(.*$/, "")}</span>)}
-            {a && <span className="ml-auto inline-block h-1 w-12 shrink-0 overflow-hidden rounded bg-line" title={`confidence ${a.confidence}`}><span className={`block h-full ${a.confidence > 0.75 ? "bg-ok" : a.confidence > 0.5 ? "bg-warn" : "bg-bad"}`} style={{ width: `${a.confidence * 100}%` }} /></span>}
-          </div>
-        )}
-      </td>
-      <td className="border-b border-line py-3.5">
-        {a && (
-          <div className="rise space-y-1.5 text-[12px]">
-            {a.flag === "needs_approval" ? <div className="flex items-center gap-1.5 font-medium text-bad"><ShieldAlert size={13} /> Needs approval</div>
-              : a.flag === "no_evidence" ? <div className="flex items-center gap-1.5 font-medium text-warn"><TriangleAlert size={13} /> No evidence</div>
-              : <div className="flex items-center gap-1.5 font-medium text-ok"><Check size={13} /> Ready</div>}
-            {a.verdict !== "na" && <div className={`font-mono text-[10px] uppercase ${a.verdict === "yes" ? "text-ok" : a.verdict === "no" ? "text-bad" : "text-warn"}`}>verdict · {a.verdict}</div>}
-            {a.reason && <div className="text-[10px] leading-snug text-mute">{a.reason}</div>}
-            <button onClick={onApprove} className={`rounded border px-2 py-0.5 text-[11px] ${r.approved ? "border-ok/50 bg-ok/15 text-ok" : "border-line text-mute hover:text-fg"}`}>{r.approved ? "Approved" : "Approve"}</button>
-          </div>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-function parseCsvClient(csv: string): Question[] {
-  const rows: string[][] = [];
-  let row: string[] = [], cell = "", q = false;
-  for (let i = 0; i < csv.length; i++) {
-    const c = csv[i];
-    if (q) { if (c === '"' && csv[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
-    else if (c === '"') q = true;
-    else if (c === ",") { row.push(cell); cell = ""; }
-    else if (c === "\n" || c === "\r") { if (c === "\r" && csv[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
-    else cell += c;
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  const [head, ...body] = rows.filter((r) => r.some((c) => c.trim()));
-  if (!head) return [];
-  const h = head.map((x) => x.trim().toLowerCase());
-  const iq = h.indexOf("question"), is = h.indexOf("section");
-  const ii = ["id", "question_id", "ref"].map((k) => h.indexOf(k)).find((i) => i >= 0) ?? -1;
-  return body.map((r, n) => ({ id: ii >= 0 && r[ii]?.trim() ? r[ii].trim() : `Q${String(n + 1).padStart(2, "0")}`, section: is >= 0 ? (r[is] ?? "").trim() : "", text: (iq >= 0 ? r[iq] : r[r.length - 1] ?? "").trim() })).filter((x) => x.text);
 }

@@ -1,61 +1,48 @@
-# Attest — questionnaire & RFP autopilot
+# TenderScale
 
-Turns an enterprise security questionnaire or RFP into cited, risk-flagged draft answers in seconds,
-using only the vendor's own evidence. Built at Accel AI Innovate Amsterdam (23 Sep 2026) on
-**Nebius Token Factory** open models.
-
-## How it works
+Answers a security questionnaire from a company's own policies. Every answer cites the exact section and policy
+version with a verbatim quote that the code checks against the source, conflicts between policies are flagged,
+questions no policy covers are refused instead of invented, and a rerun after a policy change shows exactly which
+answers changed. Built at Accel AI Innovate Amsterdam (23 Sep 2026) on Nebius Token Factory open models.
 
 ```
-questionnaire (CSV)            knowledge base (data/companies/<company>/knowledge/*.md)
-      │                                   │  npm run index → data/index.json
-      ▼                                   ▼
- ┌─ triage ──────────────┐   ┌─ retrieve ──────────────────────┐   in parallel
- │ Qwen3-235B-A22B (fast)   │   │ Qwen3-Embedding-8B embeddings → cosine  │
- │ category + risk, JSON │   │ top-k over hot in-memory index  │
- └───────────┬───────────┘   └───────────────┬─────────────────┘
-             └───────────────┬───────────────┘
-                             ▼
-              ┌─ draft ───────────────────────────┐   N parallel streams
-              │ Qwen3-235B-A22B (fast)              │   answer · [n] citations
-              │ evidence-only, flags no_evidence  │   confidence · flag
-              └───────────────┬───────────────────┘
-                              ▼
-      SSE → workspace: live answers, citations, confidence, approval, CSV export
-      Tavily (optional, parallel): prospect brief for the executive summary
+policies (md) + last year's answers (csv) + new questionnaire (csv)
+        │
+        ▼ per question, 50 in parallel
+  shortlist ── Qwen3-Embedding-8B, cosine over sections + past answers (in memory)
+        │
+  select ───── Qwen3-30B-A3B: sections that contain the answer · coverage · category
+        │
+  write ────── Qwen3-235B-A22B: Yes/No/Unknown · comment · verbatim quotes · conflicts · past-answer consistency
+        │
+  checks ───── code: quote found in section? numbers backed by a quote? Yes without a source → Unknown
+        │
+  flag ─────── code: red (no source) · orange (conflict, changed practice, unverified number) · green
+        ▼
+  SSE → workspace: rows stream in, answer panel with quotes, diff after a policy change, gap list, CSV export
 ```
 
-- `src/lib/pipeline.ts` — the three stages, streamed as server-sent events
-- `src/lib/nebius.ts` — Token Factory client, model ids, list prices
-- `src/lib/retrieval.ts` — in-memory vector index (sub-millisecond search)
-- `src/app/api/run/route.ts` — `POST /api/run` → SSE
-- `scripts/eval.ts` — accuracy against a held-out answer key (`data/answer-keys/`), traps included → `/benchmark`
-- `scripts/benchmark.ts` — model selection matrix: same pipeline for every candidate drafter, blind LLM judge
-- `scripts/report.ts` — regenerates `docs/results.md` and its charts from the JSON results
-- `docs/frontend-spec.md` — the UI contract (events, states, metrics) · `docs/submission.md` — the submission text
+- `src/lib/corpus.ts` — policies → sections (`InfoSec §5`), versions, hashes; past answers; questionnaire CSV
+- `src/lib/pipeline.ts` — the run; `src/lib/checks.ts` — quote/number checks and flag rules; `src/lib/diff.ts` — run-to-run diff
+- `src/app/api/run/route.ts` — `POST /api/run` → server-sent events; `api/meta`, `api/diff`
+- `scripts/benchmark.ts` — scores the pipeline (and a closed model) against `benchmark/answer_key.csv`, which the pipeline never reads
+- `MODELS.md` — exact model ids, prices, and why · `docs/frontend-spec.md` — UI contract · `docs/submission.md`
 
 ## Run
 
 ```bash
-cp .env.example .env.local   # add NEBIUS_API_KEY (and TAVILY_API_KEY)
-npm install
-npm run index                # embed data/knowledge → data/index.json
-npm run dev                  # http://localhost:3000
-npm run eval                 # ground truth: data/eval.json
-npm run benchmark            # model matrix: data/benchmark.json (+ closed baseline when a key exists)
-npm run report               # docs/results.md + docs/charts/*.svg
+cp .env.example .env.local        # NEBIUS_API_KEY (AI_GATEWAY_API_KEY only for the closed baseline)
+npm install && npm run index      # embeds policy sections + past answers → data/index.json
+npm run dev                       # http://localhost:3000
+npm run benchmark                 # benchmark/benchmark.md + benchmark.json + answer_key_filled.xlsx
 ```
 
-## Workspaces
-
-`data/companies/<slug>/company.md` + `knowledge/*.md` (Markdown with `title / kind / owner / updated` frontmatter).
-Demo company: **Personivo B.V.** (3 policies + last year's questionnaire, CAIQ v4.1 with a held-out answer key).
-Second workspace: Kestrel Cloud B.V. (26 synthetic documents, a vendor assessment and an RFP).
+Demo set: `data/demo/` — Personivo B.V. (fictional HR SaaS, Utrecht): three policies, 30 answers from 2025, a
+50-question CAIQ v4.1, and a prepared IR/BC v2.4 update for the diff demo.
 
 ## Responsible design
 
-Answers are drafted only from retrieved evidence; anything not covered is marked *No evidence* and
-routed to an SME instead of being invented. Questions that commit the company (incidents, liability,
-indemnities, audit rights, pricing) are flagged *Needs approval* and cannot be exported as approved
-without a human. Inference runs in the EU on Nebius with zero data retention; nothing is stored
-server-side — a run lives only in the reviewer's browser until they export it.
+Every answer cites a verbatim quote and the code verifies the quote against the section. No answer without a
+source: red questions are never answered. Past answers never override the current policy. The answer key is never in
+the pipeline path. Inference on Nebius in the EU; no closed model in the pipeline. The export carries the flags, so a
+human sees what needs review before anything is sent.

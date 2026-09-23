@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Attest · Pitch</title>
+<title>TenderScale · Pitch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -123,7 +123,7 @@ tr.hi td.nb{color:var(--ok)}
   <!-- 1 · Title -->
   <section class="title-slide">
     <div class="hint">→ or click to advance · F fullscreen</div>
-    <div class="logo">Attest<span>.</span></div>
+    <div class="logo">TenderScale<span>.</span></div>
     <div class="tag">Every answer cited. Every risk flagged.<br>Seconds, not weeks.</div>
     <div class="sub">Open models on Nebius Token Factory</div>
   </section>
@@ -141,9 +141,22 @@ tr.hi td.nb{color:var(--ok)}
   </section>
 
   <!-- 3 · Product -->
+    <!-- Meet the customer -->
   <section>
+    <div class="kicker">The demo customer</div>
+    <h2>Meet Personivo</h2>
+    <div class="cards">
+      <div class="card"><div class="k">Who</div><div class="v">25-person HR SaaS in Utrecht. Sells to banks and insurers.</div></div>
+      <div class="card"><div class="k">What they have</div><div class="v">3 policies (InfoSec v4.0, DataProt v3.1, IR/BC v2.3), ISO 27001, last year's answers.</div></div>
+      <div class="card"><div class="k">What just arrived</div><div class="v">A 50-question CAIQ v4.1 from a bank. Due Friday.</div></div>
+      <div class="card"><div class="k">The traps</div><div class="v">Policies that changed since 2025, two policies that disagree, questions no policy covers, and one honest "No".</div></div>
+    </div>
+    <div class="small">Fictional company, real CAIQ questions (CSA), held-out answer key for the benchmark.</div>
+  </section>
+
+<section>
     <div class="kicker">The product</div>
-    <h2 style="font-size:64px;margin-bottom:28px">Attest turns a 50–200 question security questionnaire into cited, risk-flagged drafts from your own evidence.</h2>
+    <h2 style="font-size:64px;margin-bottom:28px">TenderScale turns a 50–200 question security questionnaire into cited, risk-flagged drafts from your own evidence.</h2>
     <div class="lead" style="margin-bottom:36px">Every answer carries four things:</div>
     <div class="cards">
       <div class="card">
@@ -176,18 +189,18 @@ tr.hi td.nb{color:var(--ok)}
   <!-- 5 · Architecture -->
   <section>
     <div class="kicker">Architecture</div>
-    <h2 style="font-size:64px;margin-bottom:28px">Three stages, all parallel, all open</h2>
+    <h2 style="font-size:64px;margin-bottom:28px">Select, write, verify. All open models.</h2>
     <div class="arch">
       <div class="lane">
         <div class="box io"><div class="st">Input</div><div class="model">Questionnaire</div><div class="d">50 questions · 26 docs</div></div>
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
         <div class="stack">
           <div class="lbl">Concurrent</div>
-          <div class="box"><div class="st">Stage 1 · Triage</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">category + risk · plain JSON · 5 q/call</div></div>
+          <div class="box"><div class="st">Stage 1 · Triage</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">picks the sections that contain the answer · coverage: covered / partial / none</div></div>
           <div class="box"><div class="st">Stage 2 · Retrieve</div><div class="model">Qwen3-Embedding-8B</div><div class="d">in-memory cosine index · &lt; 1 ms</div></div>
         </div>
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
-        <div class="box draft"><div class="st">Stage 3 · Draft</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">evidence-only prompt · 1 q/call · 50 calls streamed in parallel</div></div>
+        <div class="box draft"><div class="st">Stage 3 · Draft</div><div class="model">Qwen3-235B-A22B Instruct</div><div class="d">Yes / No / Unknown · verbatim quotes · conflicts · 50 in parallel</div></div>
         <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
         <div class="box io"><div class="st">Output</div><div class="model">Workspace</div><div class="d">SSE → Next.js 16 on Vercel<br>cite · confidence · flag</div></div>
       </div>
@@ -204,16 +217,17 @@ tr.hi td.nb{color:var(--ok)}
     <div class="kicker">Measurable model advantage</div>
     <h2 style="margin-bottom:24px">Measured, not claimed</h2>
     <table>
-      <thead><tr><th>Metric · 50 CAIQ v4.1 questions</th><th>Attest · Qwen3-235B on Nebius</th><th>Baseline</th></tr></thead>
+      <thead><tr><th>Metric · 50 CAIQ v4.1 questions · answer key never seen by the model</th><th>TenderScale on Nebius</th><th>Baseline</th></tr></thead>
       <tbody>
-        <tr class="hi"><td class="metric">Verdict correct vs held-out answer key</td><td class="v nb">94%</td><td class="v bl">manual: 20–40 h</td></tr>
-        <tr><td class="metric">Key facts correct · invented facts</td><td class="v nb">92% · 1 of 50</td><td class="v bl">—</td></tr>
-        <tr><td class="metric">Traps caught (outdated · conflict · uncovered · honest no)</td><td class="v nb">6 of 8</td><td class="v bl">—</td></tr>
-        <tr><td class="metric">Wall-clock · first token</td><td class="v nb">7.9s · 1.7s</td><td class="v bl">20–40 h</td></tr>
-        <tr class="hi"><td class="metric">Cost per questionnaire</td><td class="v nb">$0.023 · 8–13× cheaper</td><td class="v bl">GPT-5 $0.19 · GPT-4o $0.30 list price</td></tr>
+        <tr class="hi"><td class="metric">Answers correct (Yes / No / Unknown)</td><td class="v nb">49 of 50</td><td class="v bl">manual: 20–40 h</td></tr>
+        <tr><td class="metric">Flags correct (ready · review · no source)</td><td class="v nb">47 of 50</td><td class="v bl">—</td></tr>
+        <tr><td class="metric">Invented numbers</td><td class="v nb">0</td><td class="v bl">—</td></tr>
+        <tr><td class="metric">Quotes verified against the policy text</td><td class="v nb">100%</td><td class="v bl">—</td></tr>
+        <tr><td class="metric">Seconds per questionnaire</td><td class="v nb">20</td><td class="v bl">20–40 h</td></tr>
+        <tr class="hi"><td class="metric">Cost per questionnaire</td><td class="v nb">$0.023 · 11× cheaper</td><td class="v bl">GPT-5 list price $0.26 · data leaves EU</td></tr>
       </tbody>
     </table>
-    <div class="claim">Answer key never shown to the model. Same prompts, evidence and parallelism for every model.</div>
+    <div class="claim">Same code and prompts for every model. Score sheet and the 8 trap questions: /benchmark</div>
     <div class="small">Manual today: 20–40 hours per questionnaire · https://hackathon-ten-zeta-43.vercel.app/benchmark</div>
   </section>
 
@@ -234,7 +248,7 @@ tr.hi td.nb{color:var(--ok)}
     <div class="kicker">Responsible design</div>
     <h2>Never invent. Always escalate.</h2>
     <ul class="bullets">
-      <li class="bad">Evidence only. No evidence means "No evidence", never a guess<small>TISAX, FIPS 140-2, BYOK are not in the corpus, so Attest refuses to claim them</small></li>
+      <li class="bad">Evidence only. No evidence means "No evidence", never a guess<small>TISAX, FIPS 140-2, BYOK are not in the corpus, so TenderScale refuses to claim them</small></li>
       <li class="warn">High-risk answers need a human<small>Incidents, liability, indemnities, audit rights, pricing</small></li>
       <li class="ok">Every answer editable, nothing stored server-side<small>The run lives in the reviewer's browser until export</small></li>
       <li>EU inference, zero retention on Nebius Token Factory</li>
@@ -254,7 +268,7 @@ tr.hi td.nb{color:var(--ok)}
     <div class="ask"><span class="pill">Ask: pilot customers</span><span class="team">Akram Chakrouni · Yahia</span></div>
   </section>
 
-  <div id="footer">Attest · Accel AI Innovate Amsterdam · Nebius Token Factory</div>
+  <div id="footer">TenderScale · Accel AI Innovate Amsterdam · Nebius Token Factory</div>
   <div id="counter">1 / 9</div>
 </div>
 

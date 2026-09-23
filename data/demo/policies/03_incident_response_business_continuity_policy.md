@@ -1,9 +1,3 @@
----
-title: "Incident Response and Business Continuity Policy"
-kind: policy
-owner: "Security"
-updated: "2026-06-01"
----
 # Personivo B.V. Incident Response and Business Continuity Policy
 
 Document owner: Information Security Officer (CTO)

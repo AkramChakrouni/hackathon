@@ -1,9 +1,3 @@
----
-title: "Data Protection Policy"
-kind: policy
-owner: "Privacy"
-updated: "2026-06-01"
----
 # Personivo B.V. Data Protection Policy
 
 Document owner: Data Protection Officer

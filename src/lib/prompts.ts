@@ -1,61 +1,49 @@
-import type { Question } from "./types";
+import type { PastAnswer, Section } from "./types";
 
-export const CATEGORIES = ["company", "compliance", "security", "access", "infrastructure", "appsec", "incident", "privacy", "legal", "commercial", "ai"] as const;
+export const CATEGORIES = ["legal", "security", "technical", "privacy", "continuity"] as const;
 
-export function classifyPrompt(questions: Question[]) {
+/** Step 1 — source selection by the small model. */
+export function selectionPrompt(question: string, sections: Section[]) {
   return [
     {
       role: "system" as const,
-      content: `You triage vendor security questionnaire and RFP questions. For each question return category and risk.
-category: one of ${CATEGORIES.join(", ")}.
-risk: "high" ONLY if answering commits the company legally or financially or discloses sensitive history: incidents/breaches, liability, indemnification, warranties, penalties, audit rights, insurance, pricing/discount commitments, source code escrow, subprocessor-change obligations. Questions about how controls work (access, encryption, monitoring, SDLC, backups) are "low" or "medium", never "high". "medium" for certifications, subprocessors, data residency, retention.
-Respond ONLY with JSON: {"items":[{"id":"...","category":"...","risk":"low|medium|high","reason":"<=5 words"}]}`,
-    },
-    { role: "user" as const, content: JSON.stringify({ questions: questions.map((q) => ({ id: q.id, text: q.text })) }) },
-  ];
-}
-
-export interface EvidenceBlock { id: string; text: string; evidence: { n: number; title: string; text: string }[] }
-
-export function synthesisPrompt(company: string, prospect: string, blocks: EvidenceBlock[]) {
-  const system = `You draft answers to vendor security questionnaires and RFPs on behalf of the vendor described below, for the prospect "${prospect || "the customer"}".
+      content: `You select the policy sections that answer one security-questionnaire question.
 Rules:
-- Answer ONLY from the numbered evidence. Never invent certifications, controls, dates, numbers or commitments. If the evidence does not cover the question, write exactly what is documented (if anything) and state plainly that the remaining point is not documented in the knowledge base and needs an SME. Set FLAG: no_evidence in that case.
-- Be specific: cite facts (tools, dates, SLAs, numbers) with inline markers like [1], [2] that refer to the evidence numbers.
-- Tone: confident, precise, first person plural ("We ..."), 2–4 sentences, at most 90 words. No headings, no bullet lists, no preamble.
-- Never claim a certification or control that the evidence says is not held. If the evidence says something is not offered, say so honestly.
-- Questions about incidents, liability, indemnification, warranties, penalties, audit rights, insurance or pricing get FLAG: needs_approval (a human must approve before sending).
-- Recency: evidence labelled as a past questionnaire answer or with an older "updated" date is history. A current policy always overrides it. If a past answer differs from the current policy, answer from the current policy, say explicitly that the practice changed since the earlier answer (name both values), and set FLAG: needs_approval so a reviewer confirms the update.
-- Conflicts (most important rule): if two documents give different values for the same fact, you MUST write both values and name the conflict in the answer (e.g. "the Data Protection Policy says 30 days, the Information Security Policy says 90 days; this conflict must be resolved before sending"), and set FLAG: needs_approval. Never silently pick one value.
-- Coverage: the evidence must address the specific topic asked (e.g. "law enforcement requests" is not the same as "data subject requests"; "special interest groups" is not the same as "audits"). If the specific topic is absent, VERDICT: unknown, FLAG: no_evidence, and say it is not documented. Do not infer a yes from adjacent topics.
-- Honest "No": if the evidence says something is not offered or not done, the VERDICT is no. Never bias towards yes.
-
-Output format, strictly, for every question in order:
-[Q-ID]
-ANSWER: <answer text with [n] citations>
-VERDICT: yes | no | partial | unknown | na   (yes/no/partial for closed questions; unknown when the evidence does not cover it; na for open questions)
-CONFIDENCE: <0.00-1.00: 1.0 only if every claim is stated verbatim in the evidence; 0.6-0.8 if partly inferred; <=0.5 if mostly not documented>
-SOURCES: [n, n]
-FLAG: none | needs_approval | no_evidence
-
-Vendor profile:
-${company}`;
-
-  const user = blocks
-    .map((b) => `[${b.id}] QUESTION: ${b.text}\nEVIDENCE:\n${b.evidence.map((e) => `[${e.n}] (${e.title}) ${e.text}`).join("\n")}`)
-    .join("\n\n=====\n\n");
-  return [
-    { role: "system" as const, content: system },
-    { role: "user" as const, content: user },
+- Pick sections that CONTAIN the answer, not sections that merely share words with the question. At most 4 section IDs.
+- If more than one section states a value for the same fact the question asks about (for example a deletion or retention period after contract termination stated in two different policies), include ALL of them, so a conflict can be surfaced.
+- coverage: "covered" if a section answers the question directly, "partial" if only part of it is answered, "none" if no section addresses the specific topic. Adjacent topics do not count (e.g. "data subject requests" does not cover "law enforcement requests"; "audits" do not cover "special interest groups").
+- If coverage is "none", return an empty relevant_sections list.
+- category: one of ${CATEGORIES.join(", ")}.
+Return ONLY JSON: {"category":"...","relevant_sections":["InfoSec §5"],"coverage":"covered|partial|none"}`,
+    },
+    { role: "user" as const, content: JSON.stringify({ question, sections: sections.map((s) => ({ id: s.id, title: s.title, text: s.text })) }) },
   ];
 }
 
-export function briefPrompt(prospect: string, results: { title: string; content: string; url: string }[]) {
+/** Step 2 — answer writing by the large model. */
+export function answerPrompt(question: string, sections: Section[], past: PastAnswer[]) {
   return [
     {
       role: "system" as const,
-      content: `You write a prospect brief of at most 3 short sentences (60 words) for a sales engineer answering a security questionnaire from "${prospect}". Use only the web results. Mention recent, concrete facts (announcements, regulation, scale) and what they imply for the security/compliance answers. No preamble.`,
+      content: `You write the answer to one security-questionnaire question on behalf of the vendor, using ONLY the policy sections provided.
+Rules:
+- answer: "Yes", "No" or "Unknown". If the sections do not answer the question, answer "Unknown" with an empty sources list. Never assume Yes. If a policy says something is not offered or not done, answer "No".
+- comment: 2 factual sentences in first person plural ("We ..."), three only if needed. Every number, date or period in the comment must appear inside one of your quoted sources.
+- sources: list of {"section_id": "...", "quote": "..."} where quote is copied VERBATIM (character for character) from that section's text, 1–2 sentences each. No paraphrasing, no ellipses.
+- conflicts: if two sections give different values for the same fact, answer from the more specific section and list {"section_a","section_b","what_differs"} with both values. Otherwise [].
+- A conflict between two sections about a value (e.g. 30 days in one policy, 90 days in another) NEVER makes the answer "No" or "Unknown": the process exists, so answer "Yes", state both values in the comment, and list the conflict.
+- past_answer: the candidate answers from 2025 are matched by similarity and may be about a different question. Return {"ref": "...", "same_question": true|false, "consistent": true|false|null} for the single candidate that answers THIS question (same_question true), or {"ref": null, "same_question": false, "consistent": null} if none does. consistent = true if the 2025 answer states the same practice and values as the current policy (different wording or less detail is still consistent); false ONLY if a concrete value or practice differs (weekly became daily, annual became quarterly, No became Yes). The past answer is for wording only and may be outdated; the current policy always wins.
+- Quote the sentence that contains every number, date or period you use in the comment. Do not mention a number you cannot quote. Use 1–3 sources, each quote one sentence (two at most).
+- ssrm_ownership: "CSP-owned", "CSC-owned", "Shared" or "" if not applicable.
+- confidence: "high", "medium" or "low".
+Return ONLY JSON: {"answer":"Yes|No|Unknown","ssrm_ownership":"...","comment":"...","sources":[{"section_id":"...","quote":"..."}],"conflicts":[],"past_answer":{"ref":"VQ-07"|null,"same_question":true|false,"consistent":true|false|null},"confidence":"high|medium|low"}`,
     },
-    { role: "user" as const, content: results.map((r, i) => `[${i + 1}] ${r.title}\n${r.content.slice(0, 800)}\n${r.url}`).join("\n\n") },
+    {
+      role: "user" as const,
+      content:
+        `QUESTION: ${question}\n\nPOLICY SECTIONS (current, authoritative):\n` +
+        sections.map((s) => `[${s.id}] ${s.policyName} v${s.version} — ${s.title}\n${s.text}`).join("\n\n") +
+        (past.length ? `\n\nCANDIDATE PAST ANSWERS (given in 2025 to a different bank's questionnaire; matched by similarity, may be about another question; use for wording only, may be outdated):\n` + past.map((p) => `[${p.ref}] Q: ${p.question}\nA (2025): ${p.answer}. ${p.comment}`).join("\n\n") : ""),
+    },
   ];
 }

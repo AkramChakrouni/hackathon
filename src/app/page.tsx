@@ -1,12 +1,19 @@
-import { listCompanies, loadQuestionnaires } from "@/lib/corpus";
-import { indexStats } from "@/lib/retrieval";
+import { loadDemoQuestionnaire, loadPastAnswers, loadPolicies } from "@/lib/corpus";
 import { MODELS } from "@/lib/nebius";
-import { Workspace } from "@/components/workspace";
+import { Workspace, type Meta } from "@/components/workspace";
 
 export const dynamic = "force-dynamic";
 
 export default function Home() {
-  const questionnaires = loadQuestionnaires().map((q) => ({ slug: q.slug, name: q.name, prospect: q.prospect, company: q.company, questions: q.questions }));
-  const companies = listCompanies().map((c) => { let stats = { chunks: 0, docs: 0, dims: 0 }; try { stats = indexStats(c.slug); } catch { /* index not built yet */ } return { ...c, ...stats }; });
-  return <Workspace questionnaires={questionnaires} companies={companies} models={MODELS} />;
+  const cur = loadPolicies("current"), upd = loadPolicies("updated");
+  const qn = loadDemoQuestionnaire();
+  const meta: Meta = {
+    company: "Personivo B.V.",
+    policies: cur.policies.map((p) => ({ short: p.short, name: p.name, version: p.version, effective: p.effective, sections: cur.sections.filter((s) => s.policy === p.short).length })),
+    updated_policies: upd.policies.filter((p) => !cur.policies.some((c) => c.short === p.short && c.version === p.version)).map((p) => ({ short: p.short, name: p.name, version: p.version, effective: p.effective })),
+    past_answers: loadPastAnswers().length,
+    questionnaire: { name: qn.name, header: qn.header, questions: qn.questions },
+    models: { selection: MODELS.small, writing: MODELS.large, embedding: MODELS.embedding, provider: "Nebius Token Factory" },
+  };
+  return <Workspace meta={meta} />;
 }

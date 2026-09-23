@@ -1,9 +1,3 @@
----
-title: "Information Security Policy v4.0 (effective 1 June 2026)"
-kind: policy
-owner: "Security"
-updated: "2026-06-01"
----
 # Personivo B.V. Information Security Policy
 
 Document owner: Information Security Officer (CTO)
