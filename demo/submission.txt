@@ -1,0 +1,28 @@
+What did you build, and what problem does it solve?
+
+Every software company selling to a bank or insurer gets a security questionnaire before the deal closes: 50 to 200 questions, 3 to 6 times a quarter. A security lead spends 20 to 40 hours per questionnaire searching policies and copying last year's answers, which may be outdated, and every answer is a contractual promise to the bank. Today they use spreadsheets and RFP tools that cost tens of thousands a year and still leave the checking to a human. TenderScale answers each question from the company's current policies, quotes the exact paragraph and version, flags contradictions and answers that changed since last year, refuses questions no policy covers, and after a policy update shows exactly which answers changed. Our customer is the European software supplier selling to banks and insurers; they already pay for this category and one won deal pays for years. Annual company licences that grow per product and business unit make this a company.
+
+
+Models and Token Factory use
+
+Qwen3-30B-A3B on Nebius Token Factory selects the policy paragraphs that contain the answer (classification and extraction), 1.1 seconds per question at 50 concurrent calls. Qwen3-235B-A22B on Nebius Token Factory generates the cited answer: Yes/No/Unknown, a verbatim quote, conflicts between policies, and whether last year's answer still holds; it scored 4.21/5 in a blind judge against 2.57 for gpt-oss-120b. Qwen3-Embedding-8B on Nebius provides embeddings to shortlist paragraphs so every call stays small. Two models because the large one then only writes, which is why a questionnaire costs 2.5 cents, and Nebius because both run on one EU-hosted API so policies never leave the EU. Closed model: OpenAI gpt-6-sol, used only as the benchmark baseline, not in the product.
+
+
+Measurable model advantage
+
+Baselines: OpenAI gpt-6-sol run through the identical pipeline, and the human who does this today. Test: a 50-question CAIQ v4.1 scored against a held-out answer key with 8 planted traps. Open models on Nebius: 49/50 answers correct, 47/50 flags correct, 0 invented numbers, 26.6 seconds, $0.025 per questionnaire, data stays in the EU. gpt-6-sol: 37/50 answers, 37/50 flags, 1 invented number, 95.4 seconds, $0.347, data leaves the EU. Human: 20 to 40 hours, about EUR 1,100 to 2,300. Proof: https://hackathon-ten-zeta-43.vercel.app/benchmark and benchmark/benchmark.md in the repo.
+
+
+Responsible design
+
+We store no personal data: policies and questionnaires go to Nebius in the EU for inference only, and results stay in the reviewer's browser until exported. Every answer carries a verbatim quote that code verifies against the policy, and questions no policy covers are left unanswered and flagged red, so nothing is invented. If the model is wrong, the reviewer opens the source paragraph in one click, edits, and the export carries the flags so a human reviews before anything reaches the bank.
+
+
+Pitch slides
+
+https://hackathon-ten-zeta-43.vercel.app/pitch.html
+
+
+Live product link
+
+https://hackathon-ten-zeta-43.vercel.app
