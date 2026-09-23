@@ -23,7 +23,8 @@ export interface Answer {
   id: string;
   text: string;
   confidence: number;
-  citations: Citation[];
+  citations: Citation[];   // what the drafter actually cited
+  evidence: Citation[];    // everything that was retrieved for the question (top-k)
   flag: Flag;
   reason?: string;
   latencyMs: number;
@@ -47,6 +48,7 @@ export type Event =
   | { type: "retrieved"; id: string; citations: Citation[] }
   | { type: "delta"; id: string; text: string }
   | { type: "answer"; answer: Answer }
+  | { type: "flag"; id: string; flag: Flag; reason: string }      // late escalation from triage, after the answer
   | { type: "brief"; prospect: string; summary: string; sources: { title: string; url: string }[] }
   | { type: "metrics"; metrics: Metrics }
   | { type: "done"; runId: string; metrics: Metrics }

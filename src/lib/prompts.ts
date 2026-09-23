@@ -49,7 +49,7 @@ export function briefPrompt(prospect: string, results: { title: string; content:
   return [
     {
       role: "system" as const,
-      content: `You write a 3-sentence prospect brief for a sales engineer answering a security questionnaire from "${prospect}". Use only the web results. Mention recent, concrete facts (announcements, regulation, scale) and what they imply for the security/compliance answers. No preamble.`,
+      content: `You write a prospect brief of at most 3 short sentences (60 words) for a sales engineer answering a security questionnaire from "${prospect}". Use only the web results. Mention recent, concrete facts (announcements, regulation, scale) and what they imply for the security/compliance answers. No preamble.`,
     },
     { role: "user" as const, content: results.map((r, i) => `[${i + 1}] ${r.title}\n${r.content.slice(0, 800)}\n${r.url}`).join("\n\n") },
   ];

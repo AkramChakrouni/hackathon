@@ -112,13 +112,12 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     }
     parser.end();
     const latencyMs = Date.now() - started;
-    await triage; // triage is always faster than drafting; only the final flag depends on it
     for (const q of batch) {
       const r = parser.result(q.id);
       const qc = cites.get(q.id) ?? [];
       const used = r.sources.length ? r.sources.filter((n) => n >= 1 && n <= qc.length).map((n) => qc[n - 1]) : qc.slice(0, 2);
       let flag: Flag = r.flag;
-      if (classes[q.id]?.risk === "high" && flag === "none") flag = "needs_approval";
+      if (classes[q.id]?.risk === "high" && flag === "none") flag = "needs_approval"; // if triage already finished
       if ((qc[0]?.score ?? 0) < 0.35 && flag === "none") flag = "no_evidence";
       const a: Answer = {
         id: q.id,
@@ -126,6 +125,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
         // model self-report blended with retrieval strength so the bar actually separates well-covered from thin evidence
         confidence: Number((0.6 * Math.max(0, Math.min(1, isNaN(r.confidence) ? 0.5 : r.confidence)) + 0.4 * Math.max(0, Math.min(1, ((qc[0]?.score ?? 0) - 0.4) / 0.35))).toFixed(2)),
         citations: used,
+        evidence: qc,
         flag,
         reason: flag === "needs_approval" ? (classes[q.id]?.reason || "Commits the company; approval required") : flag === "no_evidence" ? "Not covered by the knowledge base" : undefined,
         latencyMs,
@@ -137,6 +137,14 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
 
   if (tick) clearInterval(tick);
   emit({ type: "stage", stage: "synthesize", status: "done", ms: Date.now() - t0 });
+  // Triage never blocks drafting: if it finished after an answer, escalate that answer now.
+  await triage;
+  for (const a of answers.values()) {
+    if (a.flag === "none" && classes[a.id]?.risk === "high") {
+      a.flag = "needs_approval"; a.reason = classes[a.id].reason || "Commits the company; approval required";
+      emit({ type: "flag", id: a.id, flag: a.flag, reason: a.reason });
+    }
+  }
   await brief;
   const m = metrics();
   emit({ type: "metrics", metrics: m });
@@ -166,7 +174,7 @@ async function prospectBrief(prospect: string, oa: ReturnType<typeof client>, mo
   const data = (await res.json()) as { results: { title: string; content: string; url: string }[] };
   const results = data.results ?? [];
   if (!results.length) return;
-  const c = await oa.chat.completions.create({ model, messages: briefPrompt(prospect, results), temperature: 0.3, max_tokens: 220 });
+  const c = await oa.chat.completions.create({ model, messages: briefPrompt(prospect, results), temperature: 0.3, max_tokens: 150 });
   addUsage(model, c.usage?.prompt_tokens ?? 0, c.usage?.completion_tokens ?? 0);
   emit({ type: "brief", prospect, summary: c.choices[0].message.content?.trim() ?? "", sources: results.map((r) => ({ title: r.title, url: r.url })) });
   emit({ type: "stage", stage: "brief", status: "done" });

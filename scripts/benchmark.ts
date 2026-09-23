@@ -81,7 +81,7 @@ async function grade(judgeModel: string, questions: Question[], answers: Answer[
   const out: { groundedness: number; completeness: number; precision: number; hallucinated: boolean }[] = [];
   const tasks = questions.map((q, i) => async () => {
     const a = answers[i];
-    const evidence = a.citations.map((c, n) => `[${n + 1}] ${chunkById(c.chunk).text}`).join("\n");
+    const evidence = (a.evidence?.length ? a.evidence : a.citations).map((c, n) => `[${n + 1}] ${chunkById(c.chunk).text}`).join("\n");
     const res = await oa.chat.completions.create({
       model: judgeModel, temperature: 0, max_tokens: 4000,
       messages: [

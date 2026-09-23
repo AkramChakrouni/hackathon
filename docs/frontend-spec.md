@@ -47,6 +47,7 @@ type Event =
   | { type: "retrieved";  id; citations: Citation[] }          // arrives ~0.5–1 s, before any text
   | { type: "delta";      id; text: string }                   // streamed answer text, append
   | { type: "answer";     answer: Answer }                     // final for that id (replace text)
+  | { type: "flag";       id; flag; reason }                   // late escalation from triage; update that answer's badge
   | { type: "brief";      prospect; summary: string; sources: { title; url }[] }
   | { type: "metrics";    metrics: Metrics }                   // every 250 ms while drafting
   | { type: "done";       runId: string; metrics: Metrics }

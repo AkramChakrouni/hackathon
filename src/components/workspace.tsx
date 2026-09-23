@@ -80,6 +80,7 @@ export function Workspace({ questionnaires, stats, models }: { questionnaires: Q
       case "retrieved": patch(e.id, (r) => ({ ...r, citations: e.citations })); break;
       case "delta": patch(e.id, (r) => ({ ...r, text: r.text + e.text })); break;
       case "answer": patch(e.answer.id, (r) => ({ ...r, answer: e.answer, text: e.answer.text, citations: e.answer.citations.length ? e.answer.citations : r.citations })); break;
+      case "flag": patch(e.id, (r) => (r.answer ? { ...r, answer: { ...r.answer, flag: e.flag, reason: e.reason } } : r)); break;
       case "brief": setBrief({ prospect: e.prospect, summary: e.summary, sources: e.sources }); break;
       case "metrics": setMetrics(e.metrics); break;
       case "done": setMetrics(e.metrics); break;
