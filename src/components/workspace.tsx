@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileDiff, Play } from "lucide-react";
+import { Download, FileDiff, Play, Terminal, Upload } from "lucide-react";
+import { parseQuestionnaire } from "@/lib/csv";
 import { diffRuns, type Change } from "@/lib/diff";
 import { Logo } from "@/components/logo";
 import { PolicyViewer } from "@/components/policy-viewer";
@@ -20,8 +21,15 @@ const FLAG = { green: { bar: "bg-ok", text: "text-ok", label: "Ready" }, orange:
 const short = (m: string) => m.split("/").pop() ?? m;
 const usd = (n: number) => `$${n.toFixed(n < 0.1 ? 3 : 2)}`;
 
+interface Trace { question_id: string; step: "shortlist" | "select" | "write" | "verify" | "flag"; model?: string; detail: string; ms: number; t: number }
+const STEP = { shortlist: "text-mute", select: "text-accent", write: "text-fg", verify: "text-warn", flag: "text-ok" } as const;
+
 export function Workspace({ meta }: { meta: Meta }) {
   const [policySet, setPolicySet] = useState<PolicySet>("current");
+  const [qn, setQn] = useState<{ name: string; header: string[]; questions: Question[]; csv?: string }>({ name: meta.questionnaire.name, header: meta.questionnaire.header, questions: meta.questionnaire.questions });
+  const [feed, setFeed] = useState<Trace[]>([]);
+  const [showFeed, setShowFeed] = useState(false);
+  const feedBox = useRef<HTMLDivElement | null>(null);
   const [answers, setAnswers] = useState<Map<string, Answer>>(new Map());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [run, setRun] = useState<RunMeta | null>(null);
@@ -35,18 +43,19 @@ export function Workspace({ meta }: { meta: Meta }) {
   const [viewer, setViewer] = useState<{ short: string; sectionId: string; quote?: string } | null>(null);
   const t0 = useRef(0);
   const abort = useRef<AbortController | null>(null);
-  const questions = meta.questionnaire.questions;
+  const questions = qn.questions;
+  useEffect(() => { const el = feedBox.current; if (el && showFeed) el.scrollTop = el.scrollHeight; }, [feed, showFeed]);
 
   useEffect(() => { if (!running) return; const id = setInterval(() => setElapsed(performance.now() - t0.current), 33); return () => clearInterval(id); }, [running]);
 
   const start = async () => {
     abort.current?.abort();
     if (run?.status === "done") setPrev({ run, answers: questions.map((q) => answers.get(q.id)!).filter(Boolean) });
-    setAnswers(new Map()); setSelected(new Set()); setChanges(new Map()); setRun(null); setError(null); setOpen(null); setFilter("all");
+    setAnswers(new Map()); setSelected(new Set()); setChanges(new Map()); setRun(null); setError(null); setOpen(null); setFilter("all"); setFeed([]); setShowFeed(true);
     setRunning(true); t0.current = performance.now();
     const ac = new AbortController(); abort.current = ac;
     try {
-      const res = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ policy_set: policySet }), signal: ac.signal });
+      const res = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ policy_set: policySet, csv: qn.csv, name: qn.csv ? qn.name : undefined }), signal: ac.signal });
       if (!res.ok || !res.body) throw new Error(await res.text());
       const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
       for (;;) {
@@ -59,6 +68,7 @@ export function Workspace({ meta }: { meta: Meta }) {
           const e = JSON.parse(line.slice(5)) as Event;
           if (e.type === "start" || e.type === "metrics") setRun(e.run);
           else if (e.type === "selected") setSelected((s) => new Set(s).add(e.question_id));
+          else if (e.type === "trace") setFeed((f) => (f.length > 400 ? f.slice(-300) : f).concat(e));
           else if (e.type === "answer") setAnswers((m) => new Map(m).set(e.answer.question_id, e.answer));
           else if (e.type === "done") { setRun(e.run); if (prevRef.current) setChanges(new Map(diffRuns(prevRef.current.answers, e.answers).map((c) => [c.question_id, c]))); }
           else if (e.type === "error") setError(e.message);
@@ -77,15 +87,15 @@ export function Workspace({ meta }: { meta: Meta }) {
 
   const exportCsv = () => {
     const esc = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const h = meta.questionnaire.header.map((x) => x.toLowerCase());
-    const head = [...meta.questionnaire.header, "flag", "flag_reason", "sources"];
+    const h = qn.header.map((x) => x.toLowerCase());
+    const head = [...qn.header, "flag", "flag_reason", "sources"];
     const lines = [head.map(esc).join(",")];
     questions.forEach((q, i) => {
       const a = answers.get(q.id);
-      const row = meta.questionnaire.header.map((_, c) => (h[c] === "answer" ? a?.answer ?? "" : h[c] === "comment" ? a?.comment ?? "" : h[c] === "ssrm_ownership" ? a?.ssrm_ownership ?? "" : h[c] === "question" ? q.text : h[c].includes("id") ? q.id : ""));
+      const row = qn.header.map((_, c) => (h[c] === "answer" ? a?.answer ?? "" : h[c] === "comment" ? a?.comment ?? "" : h[c] === "ssrm_ownership" ? a?.ssrm_ownership ?? "" : h[c] === "question" ? q.text : h[c].includes("id") ? q.id : ""));
       void i; lines.push([...row, a?.flag ?? "", a?.flag_reason ?? "", (a?.sources ?? []).map((s) => `${s.section_id} v${s.version}`).join("; ")].map(esc).join(","));
     });
-    const el = document.createElement("a"); el.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })); el.download = "questionnaire_2026_filled.csv"; el.click();
+    const el = document.createElement("a"); el.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })); el.download = `${qn.name.replace(/[^a-z0-9_-]+/gi, "_")}_filled.csv`; el.click();
   };
   const openA = open ? answers.get(open) : undefined;
   const openQ = open ? questions.find((q) => q.id === open) : undefined;
@@ -95,11 +105,16 @@ export function Workspace({ meta }: { meta: Meta }) {
       {/* header */}
       <div className="flex items-end justify-between gap-6 border-b border-line px-8 py-5">
         <div>
-          <div className="flex items-center gap-3 text-[13px] uppercase tracking-[0.2em] text-mute"><Logo size={26} active={running} />{meta.company} · {meta.questionnaire.name}</div>
+          <div className="flex items-center gap-3 text-[13px] uppercase tracking-[0.2em] text-mute"><Logo size={26} active={running} />{meta.company} · {qn.name}</div>
           <h1 className="mt-1 text-[28px] font-semibold tracking-tight">{questions.length} questions · {meta.policies.length} policies · {meta.past_answers} past answers</h1>
           <div className="mt-1 flex flex-wrap gap-x-4 text-[15px] text-mute">{meta.policies.map((p) => <span key={p.short}>{p.short} v{policySet === "updated" && meta.updated_policies.find((u) => u.short === p.short) ? meta.updated_policies.find((u) => u.short === p.short)!.version : p.version}</span>)}</div>
         </div>
         <div className="flex items-center gap-3">
+          <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-line px-4 py-3 text-[15px] text-mute hover:text-fg ${running ? "pointer-events-none opacity-50" : ""}`}>
+            <Upload size={16} /> Upload questionnaire
+            <input type="file" accept=".csv,text/csv" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; const text = await f.text(); const parsed = parseQuestionnaire(text, f.name.replace(/\.csv$/i, "")); if (!parsed.questions.length) { setError("No 'question' column found in that CSV"); return; } abort.current?.abort(); setQn({ name: parsed.name, header: parsed.header, questions: parsed.questions, csv: text }); setAnswers(new Map()); setSelected(new Set()); setChanges(new Map()); setRun(null); setPrev(null); setFeed([]); setError(null); setOpen(null); e.target.value = ""; }} />
+          </label>
+          {qn.csv && <button onClick={() => { setQn({ name: meta.questionnaire.name, header: meta.questionnaire.header, questions: meta.questionnaire.questions }); setAnswers(new Map()); setRun(null); setPrev(null); setChanges(new Map()); setFeed([]); }} disabled={running} className="rounded-md px-3 py-3 text-[14px] text-mute hover:text-fg">Demo set</button>}
           {meta.updated_policies.length > 0 && (
             <button onClick={() => setPolicySet((s) => (s === "current" ? "updated" : "current"))} disabled={running} className={`flex items-center gap-2 rounded-md border px-4 py-3 text-[15px] ${policySet === "updated" ? "border-warn/60 bg-warn/10 text-warn" : "border-line text-mute hover:text-fg"}`}>
               <FileDiff size={16} /> {policySet === "updated" ? `Updated policy loaded (${meta.updated_policies.map((u) => `${u.short} v${u.version}`).join(", ")})` : `Load updated ${meta.updated_policies.map((u) => `${u.short} v${u.version}`).join(", ")}`}
@@ -131,7 +146,8 @@ export function Workspace({ meta }: { meta: Meta }) {
         {(["all", "green", "orange", "red", ...(counts.changed ? ["changed" as const] : [])] as Filter[]).map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 capitalize ${filter === f ? "bg-panel text-fg ring-1 ring-line" : "text-mute hover:text-fg"}`}>{f === "all" ? "All" : f === "changed" ? "Changed" : FLAG[f].label}{f !== "all" && <span className="ml-1.5 font-mono text-[13px] opacity-70">{f === "changed" ? counts.changed : counts[f]}</span>}</button>
         ))}
-        {counts.red > 0 && <span className="ml-auto text-[15px] text-mute">Gap list: <span className="text-bad">{counts.red}</span> question{counts.red > 1 ? "s" : ""} no policy covers</span>}
+        <button onClick={() => setShowFeed((v) => !v)} className={`ml-auto flex items-center gap-2 rounded-md px-3 py-1.5 ${showFeed ? "bg-panel text-fg ring-1 ring-line" : "text-mute hover:text-fg"}`}><Terminal size={14} /> Engine{feed.length ? <span className="font-mono text-[13px] opacity-70">{feed.length}</span> : null}</button>
+        {counts.red > 0 && <span className="text-[15px] text-mute">Gap list: <span className="text-bad">{counts.red}</span> question{counts.red > 1 ? "s" : ""} no policy covers</span>}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -196,6 +212,12 @@ export function Workspace({ meta }: { meta: Meta }) {
         )}
       </div>
 
+      {showFeed && (
+        <div ref={feedBox} className="max-h-56 shrink-0 overflow-auto border-t border-line bg-panel px-8 py-2 font-mono text-[12.5px] leading-relaxed">
+          {feed.length === 0 && <div className="text-mute">Engine feed: every step of the pipeline appears here as it happens.</div>}
+          {feed.map((l, i) => <div key={i} className="flex gap-3 whitespace-nowrap"><span className="w-14 shrink-0 text-mute">{(l.t / 1000).toFixed(2)}s</span><span className="w-20 shrink-0 text-fg/70">{l.question_id}</span><span className={`w-16 shrink-0 ${STEP[l.step]}`}>{l.step}</span><span className="w-40 shrink-0 truncate text-mute">{l.model ? short(l.model) : "code"}</span><span className="truncate text-fg/85">{l.detail}</span><span className="ml-auto shrink-0 text-mute">{l.ms} ms</span></div>)}
+        </div>
+      )}
       {viewer && <PolicyViewer short={viewer.short} sectionId={viewer.sectionId} quote={viewer.quote} onClose={() => setViewer(null)} />}
       <div className="flex items-center gap-6 border-t border-line px-8 py-2 font-mono text-[12px] text-mute">
         <span>selection: {short(meta.models.selection)}</span><span>writing: {short(meta.models.writing)}</span><span>embedding: {short(meta.models.embedding)}</span><span className="ml-auto">{meta.models.provider} · EU · no closed model in the pipeline</span>

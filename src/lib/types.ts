@@ -59,6 +59,7 @@ export interface RunMeta {
 export type Event =
   | { type: "start"; run: RunMeta }
   | { type: "selected"; question_id: string; selection: Selection; ms: number }
+  | { type: "trace"; question_id: string; step: "shortlist" | "select" | "write" | "verify" | "flag"; model?: string; detail: string; ms: number; t: number }  // live engine feed
   | { type: "answer"; answer: Answer }
   | { type: "metrics"; run: RunMeta }
   | { type: "done"; run: RunMeta; answers: Answer[] }

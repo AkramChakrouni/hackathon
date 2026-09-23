@@ -42,6 +42,8 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     let inTok = 0, outTok = 0;
     // ── Step 1: source selection (small model) ──
     const cand = vectors[i] ? shortlist(vectors[i]!, sections, past) : { sections, past, pastScores: new Map<string, number>(), complete: false, topScore: 0 };
+    const trace = (step: "shortlist" | "select" | "write" | "verify" | "flag", detail: string, model?: string) => emit({ type: "trace", question_id: q.id, step, model, detail, ms: Date.now() - started, t: Date.now() - t0 });
+    trace("shortlist", cand.complete ? `${cand.sections.length} candidate sections, ${cand.past.length} past answers (top similarity ${cand.topScore.toFixed(2)})` : `whole corpus (${cand.sections.length} sections)`, "Qwen3-Embedding-8B");
     let selection: Selection = { category: "security", relevant_sections: [], relevant_past_answers: [], coverage: "none" };
     let rawSmall: string | undefined, selMs = 0;
     try {
@@ -62,6 +64,7 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
     } catch (e) { if (o.signal?.aborted) throw e; }
     selMs = Date.now() - started;
     emit({ type: "selected", question_id: q.id, selection, ms: selMs });
+    trace("select", `${selection.coverage} · ${selection.relevant_sections.length ? selection.relevant_sections.join(", ") : "no section"} · ${selection.category}`, o.engine.small);
 
     const selected = selection.relevant_sections.map((id) => sections.find((s) => s.id === id)!).filter(Boolean);
     const pastSel = cand.past.slice(0, 3);
@@ -76,10 +79,14 @@ export async function runPipeline(o: RunOptions, emit: (e: Event) => void): Prom
         inTok += r.usage?.prompt_tokens ?? 0; outTok += r.usage?.completion_tokens ?? 0; account(o.engine.large, r.usage?.prompt_tokens ?? 0, r.usage?.completion_tokens ?? 0);
         rawLarge = r.choices[0].message.content ?? "";
         raw = parseJson<ModelAnswer>(rawLarge);
+        trace("write", raw ? `${raw.answer ?? "?"} · ${raw.sources?.length ?? 0} quote${(raw.sources?.length ?? 0) === 1 ? "" : "s"}${raw.conflicts?.length ? ` · ${raw.conflicts.length} conflict` : ""}${raw.past_answer?.same_question ? ` · past ${raw.past_answer.ref}${raw.past_answer.consistent === false ? " differs" : ""}` : ""} · ${r.usage?.completion_tokens ?? 0} tokens` : "no JSON in response", o.engine.large);
       } catch (e) { if (o.signal?.aborted) throw e; }
     }
     // ── Steps 3 + 4: checks in code, deterministic flags ──
+    if (!writerSections.length) trace("write", "skipped: nothing to write from", o.engine.large);
     const fin = finalize(raw, writerSections, pastSel, selection.coverage);
+    trace("verify", `${fin.checks.quotes_valid} quote${fin.checks.quotes_valid === 1 ? "" : "s"} found in policy text${fin.checks.quotes_dropped ? `, ${fin.checks.quotes_dropped} dropped` : ""}${fin.sources.some((x) => x.repaired) ? `, ${fin.sources.filter((x) => x.repaired).length} auto-quoted` : ""}${fin.checks.numbers_unverified.length ? ` · unverified numbers: ${fin.checks.numbers_unverified.join(", ")}` : " · all numbers quoted"}`);
+    trace("flag", `${fin.flag.toUpperCase()} · ${fin.flag_reason}`);
     const a: Answer = { question_id: q.id, ...fin, category: selection.category, coverage: selection.coverage, input_tokens: inTok, output_tokens: outTok, latency_ms: Date.now() - started, selection_ms: selMs, raw_small: rawSmall, raw_large: rawLarge };
     answers.set(q.id, a);
     run.done = answers.size; run.flags[a.flag as Flag]++; run.duration_ms = Date.now() - t0;

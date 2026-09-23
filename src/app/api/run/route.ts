@@ -8,9 +8,10 @@ export const maxDuration = 120;
 
 /** POST { policy_set?: "current"|"updated", csv?: string } → server-sent events (start, selected, answer, metrics, done). */
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => ({}))) as { policy_set?: PolicySet; csv?: string };
+  const body = (await req.json().catch(() => ({}))) as { policy_set?: PolicySet; csv?: string; name?: string };
   const policySet: PolicySet = body.policy_set === "updated" ? "updated" : "current";
-  const qn = body.csv ? parseQuestionnaire(body.csv, "uploaded") : loadDemoQuestionnaire();
+  const qn = body.csv ? parseQuestionnaire(body.csv, body.name ?? "uploaded") : loadDemoQuestionnaire();
+  if (qn.questions.length > 300) return new Response("too many questions (max 300)", { status: 400 });
   if (!qn.questions.length) return new Response("no questions", { status: 400 });
   if (!process.env.NEBIUS_API_KEY) return new Response("NEBIUS_API_KEY missing", { status: 500 });
   const enc = new TextEncoder();
