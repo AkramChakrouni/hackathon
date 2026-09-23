@@ -99,5 +99,6 @@ function go(k){i=Math.max(0,Math.min(s.length-1,k));s.forEach((e,j)=>e.classList
 addEventListener('keydown',e=>{if(['ArrowRight',' ','Enter','PageDown'].includes(e.key))go(i+1);else if(['ArrowLeft','PageUp'].includes(e.key))go(i-1);else if(e.key==='Home')go(0);else if(e.key==='End')go(s.length-1);else if(e.key==='f')document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();});
 addEventListener('click',e=>{if(e.target.closest('a'))return;go(e.clientX>innerWidth/3?i+1:i-1)});go(i);
 </script></body></html>`;
+fs.mkdirSync("public", { recursive: true });
 fs.writeFileSync(path.join("public", "pitch.html"), html);
 console.log("wrote public/pitch.html,", slides.length, "slides");
